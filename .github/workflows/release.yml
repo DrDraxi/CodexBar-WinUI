@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    env:
+      PLATFORM: x64
+      RID: win-x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore CodexBar.sln
+
+      - name: Publish
+        run: |
+          dotnet publish src/CodexBar/CodexBar.csproj `
+            --configuration Release `
+            --runtime ${{ env.RID }} `
+            --self-contained true `
+            -p:Platform=${{ env.PLATFORM }} `
+            -p:PublishSingleFile=false `
+            -o publish/${{ env.RID }}
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag) { $tag = "dev" }
+          $asset = "CodexBar-$tag-${{ env.RID }}.zip"
+          Compress-Archive -Path "publish/${{ env.RID }}/*" -DestinationPath $asset
+          echo "ASSET=$asset" >> $env:GITHUB_OUTPUT
+        id: pkg
+
+      - name: Upload release assets
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" "${{ steps.pkg.outputs.ASSET }}" --clobber
+
+      - name: Upload workflow artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: codexbar-${{ env.RID }}
+          path: ${{ steps.pkg.outputs.ASSET }}

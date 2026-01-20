@@ -1,27 +1,63 @@
-# Xcode user/session
-xcuserdata/
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+*.csproj.user
+*.pubxml
+*.pubxml.user
+launchSettings.json
+*.appx
+*.appxbundle
+*.appxupload
+*.msix
+*.msixbundle
+*.msixupload
+AppPackages/
+BundleArtifacts/
 
-# Build products
+# NuGet
+packages/
+*.nupkg
+.nuget/
+
+# Build
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# Rider
+.idea/
+*.sln.iml
+
+# macOS / Xcode (archived Swift code)
+xcuserdata/
 .build/
 DerivedData
-
-# Bundles / artifacts
-# Main app bundle (any variation)
 CodexBar.app/
 CodexBar *.app/
 CodexBar_*.app/
 Codexbar.app/
-# Release artifacts
 *.ipa
 *.dSYM*
-*.zip
 *.delta
 *.dmg
 *.pkg
-*.tar.gz
-*.tgz
 Icon.iconset
 debug_*.swift
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
 
 # Misc
 .DS_Store
@@ -29,7 +65,3 @@ debug_*.swift
 # Debug/analysis docs
 docs/*-analysis.md
 docs/.astro/
-
-# Swift Package Manager metadata (leave sources tracked)
-# Packages/
-# Package.resolved
