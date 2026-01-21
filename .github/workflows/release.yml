@@ -71,52 +71,71 @@ jobs:
           echo "ZIP_ASSET=$asset" >> $env:GITHUB_OUTPUT
         id: pkg-zip
 
-      # 3. Build MSIX package (unsigned)
+      # 3. Build MSIX package (unsigned) using makeappx
       - name: Build MSIX
-        shell: pwsh
-        run: |
-          $tag = "${{ github.ref_name }}"
-          if (-not $tag) { $tag = "1.0.0" }
-          $version = $tag -replace '^v', ''
-          if ($version -notmatch '^\d+\.\d+\.\d+') { $version = "1.0.0" }
-          $version = "$version.0"
-
-          dotnet publish src/CodexBar/CodexBar.csproj `
-            --configuration Release `
-            --runtime ${{ env.RID }} `
-            --self-contained true `
-            -p:Platform=${{ env.PLATFORM }} `
-            -p:WindowsPackageType=MSIX `
-            -p:AppxPackageSigningEnabled=false `
-            -p:Version=$version `
-            -p:GenerateAppxPackageOnBuild=true
-
-      - name: Find MSIX
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           if (-not $tag) { $tag = "dev" }
 
-          Write-Host "Searching for MSIX files..."
+          # Use the zip publish output to create MSIX
+          $publishDir = "publish/zip"
+          $msixDir = "publish/msix-content"
+          $asset = "CodexBar-$tag-${{ env.RID }}.msix"
 
-          # Search everywhere in the project
-          $msixFiles = Get-ChildItem -Path "src/CodexBar" -Filter "*.msix" -Recurse -ErrorAction SilentlyContinue
+          # Create MSIX content directory
+          New-Item -ItemType Directory -Path $msixDir -Force | Out-Null
 
-          foreach ($f in $msixFiles) {
-            Write-Host "Found: $($f.FullName)"
+          # Copy published files
+          Copy-Item -Path "$publishDir/*" -Destination $msixDir -Recurse
+
+          # Copy AppxManifest
+          Copy-Item "src/CodexBar/Package.appxmanifest" -Destination "$msixDir/AppxManifest.xml"
+
+          # Copy assets for MSIX
+          $assetsDir = "$msixDir/Assets"
+          if (-not (Test-Path $assetsDir)) {
+            New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
+          }
+          Copy-Item "src/CodexBar/Assets/*.png" -Destination $assetsDir -Force
+
+          # Update manifest with correct executable name
+          $manifest = Get-Content "$msixDir/AppxManifest.xml" -Raw
+          $manifest = $manifest -replace '\$targetnametoken\$', 'CodexBar'
+          $manifest = $manifest -replace '\$targetentrypoint\$', 'CodexBar.App'
+          Set-Content "$msixDir/AppxManifest.xml" -Value $manifest
+
+          # Find makeappx.exe in Windows SDK
+          $sdkPaths = @(
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.19041.0\x64\makeappx.exe"
+          )
+
+          $makeappx = $null
+          foreach ($path in $sdkPaths) {
+            if (Test-Path $path) {
+              $makeappx = $path
+              break
+            }
           }
 
-          $msix = $msixFiles | Select-Object -First 1
+          if (-not $makeappx) {
+            # Try to find any makeappx
+            $makeappx = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Filter "makeappx.exe" -Recurse | Select-Object -First 1
+            if ($makeappx) { $makeappx = $makeappx.FullName }
+          }
 
-          if ($msix) {
-            $asset = "CodexBar-$tag-${{ env.RID }}.msix"
-            Copy-Item $msix.FullName -Destination $asset
-            echo "MSIX_ASSET=$asset" >> $env:GITHUB_OUTPUT
-            Write-Host "MSIX package ready: $asset"
+          if ($makeappx) {
+            Write-Host "Using makeappx: $makeappx"
+            & $makeappx pack /d $msixDir /p $asset /nv
+            if (Test-Path $asset) {
+              echo "MSIX_ASSET=$asset" >> $env:GITHUB_OUTPUT
+              Write-Host "MSIX created: $asset"
+            } else {
+              Write-Host "makeappx failed to create MSIX"
+            }
           } else {
-            Write-Host "No MSIX file found anywhere"
-            Write-Host "Listing bin directory structure:"
-            Get-ChildItem -Path "src/CodexBar/bin" -Recurse -Directory | ForEach-Object { Write-Host $_.FullName }
+            Write-Host "makeappx.exe not found - skipping MSIX creation"
           }
         id: pkg-msix
 
