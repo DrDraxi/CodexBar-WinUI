@@ -26,7 +26,8 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore CodexBar.sln
 
-      - name: Publish
+      # Build portable (unpackaged) version
+      - name: Publish Portable
         run: |
           dotnet publish src/CodexBar/CodexBar.csproj `
             --configuration Release `
@@ -34,27 +35,76 @@ jobs:
             --self-contained true `
             -p:Platform=${{ env.PLATFORM }} `
             -p:PublishSingleFile=false `
+            -p:WindowsPackageType=None `
             -o publish/${{ env.RID }}
 
-      - name: Package
+      - name: Package Portable
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           if (-not $tag) { $tag = "dev" }
           $asset = "CodexBar-$tag-${{ env.RID }}.zip"
           Compress-Archive -Path "publish/${{ env.RID }}/*" -DestinationPath $asset
-          echo "ASSET=$asset" >> $env:GITHUB_OUTPUT
-        id: pkg
+          echo "PORTABLE_ASSET=$asset" >> $env:GITHUB_OUTPUT
+        id: pkg-portable
+
+      # Build MSIX package (unsigned)
+      - name: Build MSIX
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag) { $tag = "1.0.0" }
+          $version = $tag -replace '^v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+') { $version = "1.0.0" }
+          $version = "$version.0"
+
+          dotnet publish src/CodexBar/CodexBar.csproj `
+            --configuration Release `
+            --runtime ${{ env.RID }} `
+            --self-contained true `
+            -p:Platform=${{ env.PLATFORM }} `
+            -p:WindowsPackageType=MSIX `
+            -p:AppxPackageSigningEnabled=false `
+            -p:Version=$version `
+            -o publish/msix
+
+      - name: Find and rename MSIX
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag) { $tag = "dev" }
+
+          # Find the generated MSIX file
+          $msix = Get-ChildItem -Path "src/CodexBar/bin/${{ env.PLATFORM }}/Release/net8.0-windows10.0.19041.0/AppPackages" -Filter "*.msix" -Recurse | Select-Object -First 1
+
+          if ($msix) {
+            $asset = "CodexBar-$tag-${{ env.RID }}.msix"
+            Copy-Item $msix.FullName -Destination $asset
+            echo "MSIX_ASSET=$asset" >> $env:GITHUB_OUTPUT
+            Write-Host "MSIX package: $asset"
+          } else {
+            Write-Host "No MSIX file found, checking alternative locations..."
+            Get-ChildItem -Path "src/CodexBar" -Filter "*.msix" -Recurse | ForEach-Object { Write-Host $_.FullName }
+            Get-ChildItem -Path "publish" -Filter "*.msix" -Recurse | ForEach-Object { Write-Host $_.FullName }
+          }
+        id: pkg-msix
 
       - name: Upload release assets
         if: github.event_name == 'release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" "${{ steps.pkg.outputs.ASSET }}" --clobber
+        shell: pwsh
+        run: |
+          gh release upload "${{ github.ref_name }}" "${{ steps.pkg-portable.outputs.PORTABLE_ASSET }}" --clobber
+          if ("${{ steps.pkg-msix.outputs.MSIX_ASSET }}") {
+            gh release upload "${{ github.ref_name }}" "${{ steps.pkg-msix.outputs.MSIX_ASSET }}" --clobber
+          }
 
-      - name: Upload workflow artifact
+      - name: Upload workflow artifacts
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
           name: codexbar-${{ env.RID }}
-          path: ${{ steps.pkg.outputs.ASSET }}
+          path: |
+            ${{ steps.pkg-portable.outputs.PORTABLE_ASSET }}
+            ${{ steps.pkg-msix.outputs.MSIX_ASSET }}
