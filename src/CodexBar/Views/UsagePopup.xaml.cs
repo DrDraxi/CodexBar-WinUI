@@ -14,6 +14,9 @@ namespace CodexBar.Views;
 
 public sealed partial class UsagePopup : Window
 {
+    // Cache of provider cards and their progress bars for smooth updates
+    private readonly Dictionary<UsageProvider, (Border Card, List<ProgressBar> Bars)> _providerCards = new();
+
     public UsagePopup()
     {
         this.InitializeComponent();
@@ -84,19 +87,68 @@ public sealed partial class UsagePopup : Window
 
     public void UpdateUsage(Dictionary<UsageProvider, UsageSnapshot> snapshots)
     {
-        ProviderCards.Children.Clear();
-
         var validCount = snapshots.Values.Count(s => s.IsValid);
         StatusText.Text = $"{validCount} provider{(validCount != 1 ? "s" : "")} active";
 
+        // Remove cards for providers no longer in snapshots
+        var toRemove = _providerCards.Keys.Except(snapshots.Keys).ToList();
+        foreach (var provider in toRemove)
+        {
+            if (_providerCards.TryGetValue(provider, out var cached))
+            {
+                ProviderCards.Children.Remove(cached.Card);
+                _providerCards.Remove(provider);
+            }
+        }
+
         foreach (var (provider, snapshot) in snapshots.OrderBy(kv => kv.Key.ToString()))
         {
-            var card = CreateProviderCard(provider, snapshot);
-            ProviderCards.Children.Add(card);
+            if (_providerCards.TryGetValue(provider, out var cached))
+            {
+                // Update existing progress bars - they will animate smoothly
+                UpdateProviderCard(cached.Card, cached.Bars, snapshot);
+            }
+            else
+            {
+                // Create new card
+                var bars = new List<ProgressBar>();
+                var card = CreateProviderCard(provider, snapshot, bars);
+                _providerCards[provider] = (card, bars);
+                ProviderCards.Children.Add(card);
+            }
         }
     }
 
-    private static Border CreateProviderCard(UsageProvider provider, UsageSnapshot snapshot)
+    private static void UpdateProviderCard(Border card, List<ProgressBar> bars, UsageSnapshot snapshot)
+    {
+        if (snapshot.Error != null)
+        {
+            card.Opacity = 0.6;
+            foreach (var bar in bars) bar.Value = 0;
+            return;
+        }
+
+        card.Opacity = 1.0;
+
+        int barIndex = 0;
+        if (snapshot.Primary != null && barIndex < bars.Count)
+        {
+            bars[barIndex++].Value = snapshot.Primary.UsedPercent;
+        }
+        if (snapshot.Secondary != null && barIndex < bars.Count)
+        {
+            bars[barIndex++].Value = snapshot.Secondary.UsedPercent;
+        }
+        if (snapshot.ProviderCost != null && barIndex < bars.Count)
+        {
+            var cost = snapshot.ProviderCost;
+            var percent = cost.Limit > 0 ? (cost.Used / cost.Limit) * 100 : 0;
+            if (cost.CurrencyCode == "Credits") percent = 100;
+            bars[barIndex].Value = percent;
+        }
+    }
+
+    private static Border CreateProviderCard(UsageProvider provider, UsageSnapshot snapshot, List<ProgressBar> bars)
     {
         var info = ProviderRegistry.GetProviderInfo(provider);
         var hasError = !string.IsNullOrEmpty(snapshot.Error);
@@ -147,26 +199,29 @@ public sealed partial class UsagePopup : Window
         if (!hasError && snapshot.Primary != null)
         {
             // Primary usage bar
-            var primaryRow = CreateUsageRow(
+            var (primaryRow, primaryBar) = CreateUsageRow(
                 snapshot.Secondary != null ? "Session" : "Usage",
                 snapshot.Primary.UsedPercent,
                 colorBrush
             );
             content.Children.Add(primaryRow);
+            bars.Add(primaryBar);
 
             // Secondary usage bar (if available)
             if (snapshot.Secondary != null)
             {
-                var secondaryRow = CreateUsageRow("Weekly", snapshot.Secondary.UsedPercent, colorBrush);
+                var (secondaryRow, secondaryBar) = CreateUsageRow("Weekly", snapshot.Secondary.UsedPercent, colorBrush);
                 content.Children.Add(secondaryRow);
+                bars.Add(secondaryBar);
             }
 
             // On-demand / pay-per-use cost (if available)
             if (snapshot.ProviderCost != null)
             {
                 var cost = snapshot.ProviderCost;
-                var costRow = CreateCostRow(cost.Period ?? "On-Demand", cost.Used, cost.Limit, cost.CurrencyCode);
+                var (costRow, costBar) = CreateCostRow(cost.Period ?? "On-Demand", cost.Used, cost.Limit, cost.CurrencyCode);
                 content.Children.Add(costRow);
+                bars.Add(costBar);
             }
 
             // Reset time
@@ -186,7 +241,7 @@ public sealed partial class UsagePopup : Window
         return card;
     }
 
-    private static StackPanel CreateUsageRow(string label, double percent, SolidColorBrush color)
+    private static (StackPanel Row, ProgressBar Bar) CreateUsageRow(string label, double percent, SolidColorBrush color)
     {
         var row = new StackPanel { Spacing = 4 };
 
@@ -222,10 +277,10 @@ public sealed partial class UsagePopup : Window
         };
         row.Children.Add(progressBar);
 
-        return row;
+        return (row, progressBar);
     }
 
-    private static StackPanel CreateCostRow(string label, double used, double limit, string currency)
+    private static (StackPanel Row, ProgressBar Bar) CreateCostRow(string label, double used, double limit, string currency)
     {
         var row = new StackPanel { Spacing = 4 };
 
@@ -287,7 +342,7 @@ public sealed partial class UsagePopup : Window
         };
         row.Children.Add(progressBar);
 
-        return row;
+        return (row, progressBar);
     }
 
     private static SolidColorBrush ParseColor(string hex)
