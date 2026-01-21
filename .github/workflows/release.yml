@@ -26,7 +26,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore CodexBar.sln
 
-      # Build portable (unpackaged) version
+      # Build portable single-file exe
       - name: Publish Portable
         run: |
           dotnet publish src/CodexBar/CodexBar.csproj `
@@ -34,17 +34,18 @@ jobs:
             --runtime ${{ env.RID }} `
             --self-contained true `
             -p:Platform=${{ env.PLATFORM }} `
-            -p:PublishSingleFile=false `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:WindowsPackageType=None `
             -o publish/${{ env.RID }}
 
-      - name: Package Portable
+      - name: Rename Portable exe
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           if (-not $tag) { $tag = "dev" }
-          $asset = "CodexBar-$tag-${{ env.RID }}.zip"
-          Compress-Archive -Path "publish/${{ env.RID }}/*" -DestinationPath $asset
+          $asset = "CodexBar-$tag-${{ env.RID }}.exe"
+          Copy-Item "publish/${{ env.RID }}/CodexBar.exe" -Destination $asset
           echo "PORTABLE_ASSET=$asset" >> $env:GITHUB_OUTPUT
         id: pkg-portable
 
