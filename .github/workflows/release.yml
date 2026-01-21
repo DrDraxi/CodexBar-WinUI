@@ -26,8 +26,8 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore CodexBar.sln
 
-      # Build portable single-file exe
-      - name: Publish Portable
+      # 1. Build portable single-file exe
+      - name: Publish Single File exe
         run: |
           dotnet publish src/CodexBar/CodexBar.csproj `
             --configuration Release `
@@ -37,19 +37,41 @@ jobs:
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:WindowsPackageType=None `
-            -o publish/${{ env.RID }}
+            -o publish/single
 
-      - name: Rename Portable exe
+      - name: Rename exe
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           if (-not $tag) { $tag = "dev" }
           $asset = "CodexBar-$tag-${{ env.RID }}.exe"
-          Copy-Item "publish/${{ env.RID }}/CodexBar.exe" -Destination $asset
-          echo "PORTABLE_ASSET=$asset" >> $env:GITHUB_OUTPUT
-        id: pkg-portable
+          Copy-Item "publish/single/CodexBar.exe" -Destination $asset
+          echo "EXE_ASSET=$asset" >> $env:GITHUB_OUTPUT
+        id: pkg-exe
 
-      # Build MSIX package (unsigned)
+      # 2. Build portable zip (all files)
+      - name: Publish for Zip
+        run: |
+          dotnet publish src/CodexBar/CodexBar.csproj `
+            --configuration Release `
+            --runtime ${{ env.RID }} `
+            --self-contained true `
+            -p:Platform=${{ env.PLATFORM }} `
+            -p:PublishSingleFile=false `
+            -p:WindowsPackageType=None `
+            -o publish/zip
+
+      - name: Package Zip
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag) { $tag = "dev" }
+          $asset = "CodexBar-$tag-${{ env.RID }}.zip"
+          Compress-Archive -Path "publish/zip/*" -DestinationPath $asset
+          echo "ZIP_ASSET=$asset" >> $env:GITHUB_OUTPUT
+        id: pkg-zip
+
+      # 3. Build MSIX package (unsigned)
       - name: Build MSIX
         shell: pwsh
         run: |
@@ -67,26 +89,34 @@ jobs:
             -p:WindowsPackageType=MSIX `
             -p:AppxPackageSigningEnabled=false `
             -p:Version=$version `
-            -o publish/msix
+            -p:GenerateAppxPackageOnBuild=true
 
-      - name: Find and rename MSIX
+      - name: Find MSIX
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           if (-not $tag) { $tag = "dev" }
 
-          # Find the generated MSIX file
-          $msix = Get-ChildItem -Path "src/CodexBar/bin/${{ env.PLATFORM }}/Release/net8.0-windows10.0.19041.0/AppPackages" -Filter "*.msix" -Recurse | Select-Object -First 1
+          Write-Host "Searching for MSIX files..."
+
+          # Search everywhere in the project
+          $msixFiles = Get-ChildItem -Path "src/CodexBar" -Filter "*.msix" -Recurse -ErrorAction SilentlyContinue
+
+          foreach ($f in $msixFiles) {
+            Write-Host "Found: $($f.FullName)"
+          }
+
+          $msix = $msixFiles | Select-Object -First 1
 
           if ($msix) {
             $asset = "CodexBar-$tag-${{ env.RID }}.msix"
             Copy-Item $msix.FullName -Destination $asset
             echo "MSIX_ASSET=$asset" >> $env:GITHUB_OUTPUT
-            Write-Host "MSIX package: $asset"
+            Write-Host "MSIX package ready: $asset"
           } else {
-            Write-Host "No MSIX file found, checking alternative locations..."
-            Get-ChildItem -Path "src/CodexBar" -Filter "*.msix" -Recurse | ForEach-Object { Write-Host $_.FullName }
-            Get-ChildItem -Path "publish" -Filter "*.msix" -Recurse | ForEach-Object { Write-Host $_.FullName }
+            Write-Host "No MSIX file found anywhere"
+            Write-Host "Listing bin directory structure:"
+            Get-ChildItem -Path "src/CodexBar/bin" -Recurse -Directory | ForEach-Object { Write-Host $_.FullName }
           }
         id: pkg-msix
 
@@ -96,10 +126,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          gh release upload "${{ github.ref_name }}" "${{ steps.pkg-portable.outputs.PORTABLE_ASSET }}" --clobber
-          if ("${{ steps.pkg-msix.outputs.MSIX_ASSET }}") {
-            gh release upload "${{ github.ref_name }}" "${{ steps.pkg-msix.outputs.MSIX_ASSET }}" --clobber
-          }
+          $exe = "${{ steps.pkg-exe.outputs.EXE_ASSET }}"
+          $zip = "${{ steps.pkg-zip.outputs.ZIP_ASSET }}"
+          $msix = "${{ steps.pkg-msix.outputs.MSIX_ASSET }}"
+
+          if ($exe) { gh release upload "${{ github.ref_name }}" $exe --clobber }
+          if ($zip) { gh release upload "${{ github.ref_name }}" $zip --clobber }
+          if ($msix) { gh release upload "${{ github.ref_name }}" $msix --clobber }
 
       - name: Upload workflow artifacts
         if: github.event_name != 'release'
@@ -107,5 +140,6 @@ jobs:
         with:
           name: codexbar-${{ env.RID }}
           path: |
-            ${{ steps.pkg-portable.outputs.PORTABLE_ASSET }}
+            ${{ steps.pkg-exe.outputs.EXE_ASSET }}
+            ${{ steps.pkg-zip.outputs.ZIP_ASSET }}
             ${{ steps.pkg-msix.outputs.MSIX_ASSET }}
