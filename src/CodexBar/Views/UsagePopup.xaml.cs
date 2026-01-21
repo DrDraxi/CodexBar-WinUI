@@ -198,19 +198,22 @@ public sealed partial class UsagePopup : Window
 
         if (!hasError && snapshot.Primary != null)
         {
-            // Primary usage bar
+            // Primary usage bar with reset time
+            var primaryResetTime = snapshot.Primary.ResetsAt != null ? snapshot.Primary.ResetTimeDisplay : null;
             var (primaryRow, primaryBar) = CreateUsageRow(
                 snapshot.Secondary != null ? "Session" : "Usage",
                 snapshot.Primary.UsedPercent,
-                colorBrush
+                colorBrush,
+                primaryResetTime
             );
             content.Children.Add(primaryRow);
             bars.Add(primaryBar);
 
-            // Secondary usage bar (if available)
+            // Secondary usage bar with reset time (if available)
             if (snapshot.Secondary != null)
             {
-                var (secondaryRow, secondaryBar) = CreateUsageRow("Weekly", snapshot.Secondary.UsedPercent, colorBrush);
+                var weeklyResetTime = snapshot.Secondary.ResetsAt != null ? snapshot.Secondary.ResetTimeDisplay : null;
+                var (secondaryRow, secondaryBar) = CreateUsageRow("Weekly", snapshot.Secondary.UsedPercent, colorBrush, weeklyResetTime);
                 content.Children.Add(secondaryRow);
                 bars.Add(secondaryBar);
             }
@@ -223,29 +226,18 @@ public sealed partial class UsagePopup : Window
                 content.Children.Add(costRow);
                 bars.Add(costBar);
             }
-
-            // Reset time
-            if (snapshot.Primary.ResetsAt != null)
-            {
-                var resetText = new TextBlock
-                {
-                    Text = $"Resets in {snapshot.Primary.ResetTimeDisplay}",
-                    FontSize = 11,
-                    Foreground = new SolidColorBrush(Colors.Gray)
-                };
-                content.Children.Add(resetText);
-            }
         }
 
         card.Child = content;
         return card;
     }
 
-    private static (StackPanel Row, ProgressBar Bar) CreateUsageRow(string label, double percent, SolidColorBrush color)
+    private static (StackPanel Row, ProgressBar Bar) CreateUsageRow(string label, double percent, SolidColorBrush color, string? resetTime = null)
     {
         var row = new StackPanel { Spacing = 4 };
 
         var labelRow = new Grid();
+        labelRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         labelRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         labelRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
@@ -258,12 +250,25 @@ public sealed partial class UsagePopup : Window
         Grid.SetColumn(labelText, 0);
         labelRow.Children.Add(labelText);
 
+        if (!string.IsNullOrEmpty(resetTime))
+        {
+            var resetText = new TextBlock
+            {
+                Text = resetTime,
+                FontSize = 11,
+                Foreground = new SolidColorBrush(Colors.Gray),
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            Grid.SetColumn(resetText, 1);
+            labelRow.Children.Add(resetText);
+        }
+
         var percentText = new TextBlock
         {
             Text = $"{percent:F0}%",
             FontSize = 12
         };
-        Grid.SetColumn(percentText, 1);
+        Grid.SetColumn(percentText, 2);
         labelRow.Children.Add(percentText);
 
         row.Children.Add(labelRow);

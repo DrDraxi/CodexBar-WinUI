@@ -13,7 +13,7 @@
                 <TextBlock Text="CodexBar" FontSize="24" FontWeight="Bold"/>
                 <TextBlock Text="AI Usage Tracker for Windows"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                <TextBlock Text="Version 0.1.0"
+                <TextBlock x:Name="VersionText"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
             </StackPanel>
 
