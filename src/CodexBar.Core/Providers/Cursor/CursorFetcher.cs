@@ -67,22 +67,14 @@ public class CursorFetcher : IProviderFetcher
 
             // Log the data for debugging
             DebugLog.Log("Cursor", $"Plan: used={planUsage?.Used}, limit={planUsage?.Limit}, totalPercent={planUsage?.TotalPercentUsed}");
+            DebugLog.Log("Cursor", $"Plan: autoPercent={planUsage?.AutoPercentUsed}, apiPercent={planUsage?.ApiPercentUsed}");
             DebugLog.Log("Cursor", $"OnDemand: enabled={onDemand?.Enabled}, used={onDemand?.Used} cents");
 
-            // Calculate plan usage - if on-demand is active and has usage, plan is at 100%
-            double planPercent = 0;
-            if (planUsage != null)
-            {
-                // If on-demand is enabled and has been used, plan limit is exhausted
-                if (onDemand?.Enabled == true && onDemand?.Used > 0)
-                {
-                    planPercent = 100;
-                }
-                else
-                {
-                    planPercent = planUsage.CalculatedPercentUsed;
-                }
-            }
+            // Cursor has separate limits for Auto model and Named (API) model
+            // Auto model: uses totalPercentUsed (matches "You've used X% of your included total usage")
+            // Named model: uses apiPercentUsed (matches "You've used X% of your included API usage")
+            double autoPercent = planUsage?.TotalPercentUsed ?? planUsage?.CalculatedPercentUsed ?? 0;
+            double namedPercent = planUsage?.ApiPercentUsed ?? 0;
 
             // Build on-demand cost snapshot if applicable
             ProviderCostSnapshot? costSnapshot = null;
@@ -109,8 +101,14 @@ public class CursorFetcher : IProviderFetcher
                 Provider = UsageProvider.Cursor,
                 Primary = planUsage != null ? new RateWindow
                 {
-                    UsedPercent = planPercent,
+                    Label = "Auto",
+                    UsedPercent = autoPercent,
                     ResetsAt = usage.BillingCycleEndParsed
+                } : null,
+                Secondary = planUsage != null ? new RateWindow
+                {
+                    Label = "Named",
+                    UsedPercent = namedPercent
                 } : null,
                 ProviderCost = costSnapshot,
                 Identity = new ProviderIdentity

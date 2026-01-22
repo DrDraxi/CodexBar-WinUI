@@ -6,6 +6,12 @@ namespace CodexBar.Core.Models;
 public record RateWindow
 {
     /// <summary>
+    /// Custom label for this window (e.g., "Auto", "Named", "Session")
+    /// If null, the UI will use default labels based on window position
+    /// </summary>
+    public string? Label { get; init; }
+
+    /// <summary>
     /// Percentage of the window that has been used (0-100)
     /// </summary>
     public double UsedPercent { get; init; }

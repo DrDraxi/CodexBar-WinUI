@@ -199,9 +199,11 @@ public sealed partial class UsagePopup : Window
         if (!hasError && snapshot.Primary != null)
         {
             // Primary usage bar with reset time
+            // Use custom label if provided, otherwise default based on whether secondary exists
+            var primaryLabel = snapshot.Primary.Label ?? (snapshot.Secondary != null ? "Session" : "Usage");
             var primaryResetTime = snapshot.Primary.ResetsAt != null ? snapshot.Primary.ResetTimeDisplay : null;
             var (primaryRow, primaryBar) = CreateUsageRow(
-                snapshot.Secondary != null ? "Session" : "Usage",
+                primaryLabel,
                 snapshot.Primary.UsedPercent,
                 colorBrush,
                 primaryResetTime
@@ -212,8 +214,10 @@ public sealed partial class UsagePopup : Window
             // Secondary usage bar with reset time (if available)
             if (snapshot.Secondary != null)
             {
+                // Use custom label if provided, otherwise default to "Weekly"
+                var secondaryLabel = snapshot.Secondary.Label ?? "Weekly";
                 var weeklyResetTime = snapshot.Secondary.ResetsAt != null ? snapshot.Secondary.ResetTimeDisplay : null;
-                var (secondaryRow, secondaryBar) = CreateUsageRow("Weekly", snapshot.Secondary.UsedPercent, colorBrush, weeklyResetTime);
+                var (secondaryRow, secondaryBar) = CreateUsageRow(secondaryLabel, snapshot.Secondary.UsedPercent, colorBrush, weeklyResetTime);
                 content.Children.Add(secondaryRow);
                 bars.Add(secondaryBar);
             }
