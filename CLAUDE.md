@@ -66,3 +66,7 @@ Logs written to `%LOCALAPPDATA%/CodexBar/debug.log` via `DebugLog.Log()`. Check 
 Version is derived from git tags. To release:
 1. `git tag v1.x.x && git push origin v1.x.x`
 2. Create GitHub release - workflow builds and uploads exe/zip artifacts
+
+## Commit Guidelines
+
+Do not add `Co-Authored-By: Claude` or similar co-author lines to commits.

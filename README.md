@@ -4,7 +4,7 @@ Windows port of [CodexBar](https://github.com/steipete/CodexBar), a macOS menu b
 
 A system tray app that displays your session and weekly usage for AI coding tools.
 
-![CodexBar screenshot](screenshot.png)
+![CodexBar screenshot](docs/screenshot.png)
 
 ## Providers
 
