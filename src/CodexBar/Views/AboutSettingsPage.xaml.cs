@@ -9,9 +9,10 @@ public sealed partial class AboutSettingsPage : Page
     {
         this.InitializeComponent();
 
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionText.Text = version != null
-            ? $"Version {version.Major}.{version.Minor}.{version.Build}"
+        var version = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        VersionText.Text = !string.IsNullOrEmpty(version)
+            ? $"Version {version}"
             : "Version unknown";
     }
 }

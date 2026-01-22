@@ -6,7 +6,7 @@
     xmlns:local="using:CodexBar.Views"
     Title="CodexBar Settings">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="0,32,0,0">
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="0,32,0,0" MinWidth="600" MinHeight="400">
         <NavigationView
             x:Name="NavView"
             IsBackButtonVisible="Collapsed"

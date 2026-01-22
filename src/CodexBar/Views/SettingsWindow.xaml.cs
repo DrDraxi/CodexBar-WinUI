@@ -19,6 +19,14 @@ public sealed partial class SettingsWindow : Window
         appWindow.Resize(new Windows.Graphics.SizeInt32(800, 600));
         appWindow.Title = "CodexBar Settings";
 
+        // Disable minimize and maximize buttons, set min size
+        if (appWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.IsMinimizable = false;
+            presenter.IsMaximizable = false;
+            presenter.SetBorderAndTitleBar(true, true);
+        }
+
         // Make title bar transparent/blend with content
         if (AppWindowTitleBar.IsCustomizationSupported())
         {
