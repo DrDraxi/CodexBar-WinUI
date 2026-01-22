@@ -1,6 +1,6 @@
 using System.Text.Json;
 using CodexBar.Core.Auth;
-using CodexBar.Core.Debug;
+using CodexBar.Core.Logging;
 using CodexBar.Core.Models;
 
 namespace CodexBar.Core.Providers.Cursor;

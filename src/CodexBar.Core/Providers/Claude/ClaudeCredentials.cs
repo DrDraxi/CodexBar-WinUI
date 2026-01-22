@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CodexBar.Core.Debug;
+using CodexBar.Core.Logging;
 
 namespace CodexBar.Core.Providers.Claude;
 

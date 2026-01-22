@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
-using CodexBar.Core.Debug;
+using CodexBar.Core.Logging;
 using CodexBar.Core.Models;
 
 namespace CodexBar.Core.Providers.Claude;
