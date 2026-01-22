@@ -24,6 +24,11 @@
                 <TextBlock Text="Startup" Style="{StaticResource SubtitleTextBlockStyle}"/>
                 <ToggleSwitch x:Name="StartWithWindowsToggle" Header="Start with Windows" IsOn="False" Toggled="StartWithWindowsToggle_Toggled"/>
             </StackPanel>
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="Taskbar Widget" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                <ToggleSwitch x:Name="TaskbarWidgetToggle" Header="Show usage bars in taskbar" IsOn="False" Toggled="TaskbarWidgetToggle_Toggled"/>
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </Page>

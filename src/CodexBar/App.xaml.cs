@@ -9,6 +9,7 @@ using CodexBar.Core.Models;
 using CodexBar.Core.Providers;
 using CodexBar.Core.Auth;
 using CodexBar.Services;
+using CodexBar.Widget;
 
 namespace CodexBar;
 
@@ -21,6 +22,7 @@ public partial class App : Application
     private UsagePopup? _usagePopup;
     private DispatcherQueueTimer? _refreshTimer;
     private Dictionary<UsageProvider, UsageSnapshot> _cachedSnapshots = new();
+    private TaskbarManager? _taskbarManager;
 
     public App()
     {
@@ -68,6 +70,9 @@ public partial class App : Application
             // Initialize tray icon
             InitializeTrayIcon();
             LogService.Log("App", "TrayIcon initialized");
+
+            // Initialize taskbar widget if enabled
+            InitializeTaskbarWidget();
 
             // Run first-launch detection if needed
             if (!SettingsService.Instance.Settings.FirstLaunchComplete)
@@ -172,6 +177,12 @@ public partial class App : Application
 
             contextMenu.Items.Add(new MenuFlyoutSeparator());
 
+            var widgetItem = new MenuFlyoutItem { Text = "Show/Hide Widget" };
+            widgetItem.Click += (s, e) => ToggleTaskbarWidget();
+            contextMenu.Items.Add(widgetItem);
+
+            contextMenu.Items.Add(new MenuFlyoutSeparator());
+
             var exitItem = new MenuFlyoutItem { Text = "Quit" };
             exitItem.Click += (s, e) => ExitApplication();
             contextMenu.Items.Add(exitItem);
@@ -252,6 +263,9 @@ public partial class App : Application
         }
 
         _usagePopup.Activate();
+
+        // Trigger a refresh in the background
+        _ = RefreshUsageAsync();
     }
 
     public void ShowSettings()
@@ -300,6 +314,7 @@ public partial class App : Application
             _cachedSnapshots = snapshots;
 
             _usagePopup?.UpdateUsage(snapshots);
+            _taskbarManager?.UpdateUsage(snapshots);
             LogService.Log("Refresh", "Refresh completed");
         }
         catch (Exception ex)
@@ -309,9 +324,52 @@ public partial class App : Application
         }
     }
 
+    private void InitializeTaskbarWidget()
+    {
+        _taskbarManager = new TaskbarManager();
+
+        // Handle widget click to show popup
+        _taskbarManager.WidgetClicked += (s, e) => ShowUsagePopup();
+
+        if (SettingsService.Instance.Settings.TaskbarWidgetVisible)
+        {
+            _taskbarManager.ShowWidget();
+
+            // Update with cached data if available
+            if (_cachedSnapshots.Count > 0)
+            {
+                _taskbarManager.UpdateUsage(_cachedSnapshots);
+            }
+
+            LogService.Log("App", "Taskbar widget initialized and shown");
+        }
+        else
+        {
+            LogService.Log("App", "Taskbar widget initialized (hidden)");
+        }
+    }
+
+    public void ToggleTaskbarWidget()
+    {
+        _taskbarManager?.ToggleWidget();
+    }
+
+    public void ShowTaskbarWidget()
+    {
+        _taskbarManager?.ShowWidget();
+    }
+
+    public void HideTaskbarWidget()
+    {
+        _taskbarManager?.HideWidget();
+    }
+
+    public bool IsTaskbarWidgetVisible => _taskbarManager?.IsWidgetVisible ?? false;
+
     public void ExitApplication()
     {
         _refreshTimer?.Stop();
+        _taskbarManager?.Dispose();
         _trayIcon?.Dispose();
         _usagePopup?.Close();
         _settingsWindow?.Close();

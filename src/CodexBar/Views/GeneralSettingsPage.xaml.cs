@@ -36,6 +36,9 @@ public sealed partial class GeneralSettingsPage : Page
 
         // Check actual registry state for start with Windows
         StartWithWindowsToggle.IsOn = IsStartupEnabled();
+
+        // Set taskbar widget toggle state
+        TaskbarWidgetToggle.IsOn = SettingsService.Instance.Settings.TaskbarWidgetVisible;
     }
 
     private void RefreshFrequencyCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -58,6 +61,25 @@ public sealed partial class GeneralSettingsPage : Page
         SetStartupEnabled(enabled);
         SettingsService.Instance.Settings.StartWithWindows = enabled;
         SettingsService.Instance.Save();
+    }
+
+    private void TaskbarWidgetToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isLoading) return;
+
+        var enabled = TaskbarWidgetToggle.IsOn;
+
+        if (Application.Current is App app)
+        {
+            if (enabled)
+            {
+                app.ShowTaskbarWidget();
+            }
+            else
+            {
+                app.HideTaskbarWidget();
+            }
+        }
     }
 
     private static bool IsStartupEnabled()

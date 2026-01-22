@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="CodexBar.Widget.TaskbarWidgetContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:CodexBar.Widget"
+    Background="Transparent">
+
+    <Grid x:Name="RootGrid"
+          Background="Transparent"
+          Padding="4,0"
+          VerticalAlignment="Stretch"
+          HorizontalAlignment="Stretch">
+
+        <StackPanel x:Name="BarsPanel"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    VerticalAlignment="Stretch"
+                    HorizontalAlignment="Center"/>
+    </Grid>
+</UserControl>

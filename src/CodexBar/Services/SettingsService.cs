@@ -85,4 +85,9 @@ public class AppSettings
     /// Manual cookie storage per provider
     /// </summary>
     public Dictionary<string, string> ManualCookies { get; set; } = new();
+
+    /// <summary>
+    /// Whether the taskbar widget is visible
+    /// </summary>
+    public bool TaskbarWidgetVisible { get; set; } = false;
 }
