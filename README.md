@@ -20,7 +20,7 @@ A system tray app that displays your session and weekly usage for AI coding tool
 
 ## Install
 
-Download the latest release from [GitHub Releases](https://github.com/Finesssee/Win-CodexBar/releases).
+Download the latest release from [GitHub Releases](https://github.com/drdraxi/CodexBar-winui/releases).
 
 **Requirements:** Windows 10 or later
 
