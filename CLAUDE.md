@@ -63,9 +63,58 @@ Logs written to `%LOCALAPPDATA%/CodexBar/debug.log` via `DebugLog.Log()`. Check 
 
 ## Releases
 
-Version is derived from git tags. To release:
-1. `git tag v1.x.x && git push origin v1.x.x`
-2. Create GitHub release - workflow builds and uploads exe/zip artifacts
+Version is derived from git tags. The GitHub Actions workflow automatically creates releases when a tag is pushed.
+
+### How to Release
+
+1. **Update CHANGELOG.md** with the new version section:
+   ```markdown
+   ## [v1.2.0] - YYYY-MM-DD
+
+   ### Added
+   - New feature description
+
+   ### Changed
+   - Changed behavior description
+
+   ### Fixed
+   - Bug fix description
+   ```
+
+2. **Commit the changelog**:
+   ```bash
+   git add CHANGELOG.md
+   git commit -m "docs: update changelog for v1.2.0"
+   git push
+   ```
+
+3. **Create and push the tag**:
+   ```bash
+   git tag v1.2.0
+   git push origin v1.2.0
+   ```
+
+4. The workflow will automatically:
+   - Build the exe and zip artifacts
+   - Extract release notes from CHANGELOG.md for this version
+   - Create a GitHub release with the artifacts and notes
+
+### Changelog Format
+
+Follow [Keep a Changelog](https://keepachangelog.com/) format:
+- `### Added` - New features
+- `### Changed` - Changes in existing functionality
+- `### Deprecated` - Soon-to-be removed features
+- `### Removed` - Removed features
+- `### Fixed` - Bug fixes
+- `### Security` - Security fixes
+
+### Version Numbering
+
+Follow [Semantic Versioning](https://semver.org/):
+- **Major** (v2.0.0): Breaking changes
+- **Minor** (v1.1.0): New features, backwards compatible
+- **Patch** (v1.0.1): Bug fixes, backwards compatible
 
 ## Commit Guidelines
 
