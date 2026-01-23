@@ -89,5 +89,5 @@ public class AppSettings
     /// <summary>
     /// Whether the taskbar widget is visible
     /// </summary>
-    public bool TaskbarWidgetVisible { get; set; } = false;
+    public bool TaskbarWidgetVisible { get; set; } = true;
 }
