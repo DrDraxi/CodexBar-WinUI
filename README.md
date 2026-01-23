@@ -6,6 +6,8 @@ A system tray app that displays your session and weekly usage for AI coding tool
 
 ![CodexBar screenshot](docs/screenshot.png)
 
+![Taskbar widget](docs/codexbar-widget.gif)
+
 ## Providers
 
 | Provider | Status | Authentication |
