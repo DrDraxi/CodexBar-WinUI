@@ -53,7 +53,7 @@ public sealed partial class TaskbarWidgetContent : UserControl
         {
             if (_providerPanels.TryGetValue(provider, out var panel))
             {
-                BarsPanel.Children.Remove(panel.Container);
+                BarsPanel.Children.Remove(panel.OuterContainer);
                 _providerPanels.Remove(provider);
             }
         }
@@ -78,14 +78,14 @@ public sealed partial class TaskbarWidgetContent : UserControl
                 var insertIndex = 0;
                 foreach (var child in BarsPanel.Children)
                 {
-                    if (child is StackPanel sp && sp.Tag is UsageProvider existingProvider)
+                    if (child is Border border && border.Tag is UsageProvider existingProvider)
                     {
                         if (string.Compare(provider.ToString(), existingProvider.ToString()) < 0)
                             break;
                     }
                     insertIndex++;
                 }
-                BarsPanel.Children.Insert(insertIndex, panel.Container);
+                BarsPanel.Children.Insert(insertIndex, panel.OuterContainer);
             }
         }
     }
@@ -95,19 +95,39 @@ public sealed partial class TaskbarWidgetContent : UserControl
         var info = ProviderRegistry.GetProviderInfo(provider);
         var color = ParseColor(info.Color);
 
-        // Container for this provider's bars
-        var container = new StackPanel
+        // Inner container for bars
+        var barsContainer = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = BarSpacing,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Margin = new Thickness(4, 4, 4, 4)
+        };
+
+        // Outer container with hover background
+        var outerContainer = new Border
+        {
             Tag = provider,
             VerticalAlignment = VerticalAlignment.Stretch,
-            Margin = new Thickness(0, 4, 0, 4)
+            Background = new SolidColorBrush(Colors.Transparent),
+            CornerRadius = new CornerRadius(4),
+            Child = barsContainer
+        };
+
+        // Add hover effects
+        outerContainer.PointerEntered += (s, e) =>
+        {
+            outerContainer.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
+        };
+        outerContainer.PointerExited += (s, e) =>
+        {
+            outerContainer.Background = new SolidColorBrush(Colors.Transparent);
         };
 
         var panel = new ProviderPanel
         {
-            Container = container,
+            OuterContainer = outerContainer,
+            BarsContainer = barsContainer,
             Provider = provider,
             Color = color,
             Bars = new List<(Rectangle Back, Rectangle Fill, string Label)>()
@@ -117,14 +137,14 @@ public sealed partial class TaskbarWidgetContent : UserControl
         if (snapshot.Primary != null)
         {
             var (back, fill) = CreateBar(color);
-            container.Children.Add(CreateBarContainer(back, fill));
+            barsContainer.Children.Add(CreateBarContainer(back, fill));
             panel.Bars.Add((back, fill, snapshot.Primary.Label ?? "Usage"));
         }
 
         if (snapshot.Secondary != null)
         {
             var (back, fill) = CreateBar(color);
-            container.Children.Add(CreateBarContainer(back, fill));
+            barsContainer.Children.Add(CreateBarContainer(back, fill));
             panel.Bars.Add((back, fill, snapshot.Secondary.Label ?? "Weekly"));
         }
 
@@ -132,7 +152,7 @@ public sealed partial class TaskbarWidgetContent : UserControl
         {
             var costColor = new SolidColorBrush(Colors.Orange);
             var (back, fill) = CreateBar(costColor);
-            container.Children.Add(CreateBarContainer(back, fill));
+            barsContainer.Children.Add(CreateBarContainer(back, fill));
             panel.Bars.Add((back, fill, snapshot.ProviderCost.Period ?? "Cost"));
         }
 
@@ -247,7 +267,7 @@ public sealed partial class TaskbarWidgetContent : UserControl
 
         // Set tooltip on the container
         var tooltip = string.Join("\n", tooltipLines);
-        ToolTipService.SetToolTip(panel.Container, tooltip);
+        ToolTipService.SetToolTip(panel.OuterContainer, tooltip);
     }
 
     private void UpdateBarFill(Rectangle fill, double percent)
@@ -293,7 +313,8 @@ public sealed partial class TaskbarWidgetContent : UserControl
 
     private class ProviderPanel
     {
-        public StackPanel Container { get; set; } = null!;
+        public Border OuterContainer { get; set; } = null!;
+        public StackPanel BarsContainer { get; set; } = null!;
         public UsageProvider Provider { get; set; }
         public SolidColorBrush Color { get; set; } = null!;
         public List<(Rectangle Back, Rectangle Fill, string Label)> Bars { get; set; } = null!;

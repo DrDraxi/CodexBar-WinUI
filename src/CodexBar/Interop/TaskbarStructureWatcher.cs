@@ -10,6 +10,7 @@ internal sealed class TaskbarStructureWatcher : IDisposable
 {
     private readonly DispatcherQueueTimer _pollTimer;
     private Native.RECT _lastTaskbarRect;
+    private Native.RECT _lastTrayNotifyRect;
     private IntPtr _lastTaskbarHwnd;
     private bool _disposed;
 
@@ -38,6 +39,13 @@ internal sealed class TaskbarStructureWatcher : IDisposable
         {
             _lastTaskbarHwnd = taskbar;
             Native.GetWindowRect(taskbar, out _lastTaskbarRect);
+
+            // Capture tray notify area state
+            var trayNotify = Native.FindTrayNotifyWnd(taskbar);
+            if (trayNotify != IntPtr.Zero)
+            {
+                Native.GetWindowRect(trayNotify, out _lastTrayNotifyRect);
+            }
         }
 
         _pollTimer.Start();
@@ -75,7 +83,7 @@ internal sealed class TaskbarStructureWatcher : IDisposable
 
         if (taskbar == IntPtr.Zero) return;
 
-        // Check for bounds change
+        // Check for taskbar bounds change
         Native.GetWindowRect(taskbar, out var currentRect);
 
         if (!RectsEqual(currentRect, _lastTaskbarRect))
@@ -83,6 +91,21 @@ internal sealed class TaskbarStructureWatcher : IDisposable
             LogService.Log("TaskbarWatcher", $"Taskbar bounds changed: {_lastTaskbarRect.Width}x{_lastTaskbarRect.Height} -> {currentRect.Width}x{currentRect.Height}");
             _lastTaskbarRect = currentRect;
             TaskbarChanged?.Invoke(this, new TaskbarChangedEventArgs(TaskbarChangeReason.BoundsChanged, currentRect));
+            return;
+        }
+
+        // Check for tray notify area change (icons added/removed)
+        var trayNotify = Native.FindTrayNotifyWnd(taskbar);
+        if (trayNotify != IntPtr.Zero)
+        {
+            Native.GetWindowRect(trayNotify, out var currentTrayRect);
+
+            if (!RectsEqual(currentTrayRect, _lastTrayNotifyRect))
+            {
+                LogService.Log("TaskbarWatcher", $"Tray area changed: {_lastTrayNotifyRect.Left}-{_lastTrayNotifyRect.Right} -> {currentTrayRect.Left}-{currentTrayRect.Right}");
+                _lastTrayNotifyRect = currentTrayRect;
+                TaskbarChanged?.Invoke(this, new TaskbarChangedEventArgs(TaskbarChangeReason.TrayIconsChanged, currentRect));
+            }
         }
     }
 
@@ -123,5 +146,6 @@ internal enum TaskbarChangeReason
 {
     BoundsChanged,
     ExplorerRestart,
-    DpiChanged
+    DpiChanged,
+    TrayIconsChanged
 }

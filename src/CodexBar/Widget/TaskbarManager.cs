@@ -125,8 +125,9 @@ public sealed class TaskbarManager : IDisposable
 
             case TaskbarChangeReason.BoundsChanged:
             case TaskbarChangeReason.DpiChanged:
+            case TaskbarChangeReason.TrayIconsChanged:
                 // Reposition widget
-                LogService.Log("TaskbarManager", "Repositioning widget due to taskbar change");
+                LogService.Log("TaskbarManager", $"Repositioning widget due to {e.Reason}");
                 _widget.UpdatePosition();
                 break;
         }
