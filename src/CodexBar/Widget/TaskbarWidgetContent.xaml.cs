@@ -29,6 +29,11 @@ public sealed partial class TaskbarWidgetContent : UserControl
     /// </summary>
     public event EventHandler? Clicked;
 
+    /// <summary>
+    /// Fired when the desired width changes
+    /// </summary>
+    public event EventHandler<int>? WidthChanged;
+
     public TaskbarWidgetContent()
     {
         this.InitializeComponent();
@@ -88,6 +93,9 @@ public sealed partial class TaskbarWidgetContent : UserControl
                 BarsPanel.Children.Insert(insertIndex, panel.OuterContainer);
             }
         }
+
+        // Notify about width change
+        WidthChanged?.Invoke(this, (int)GetDesiredWidth());
     }
 
     private ProviderPanel CreateProviderPanel(UsageProvider provider, UsageSnapshot snapshot)
@@ -104,24 +112,32 @@ public sealed partial class TaskbarWidgetContent : UserControl
             Margin = new Thickness(4, 4, 4, 4)
         };
 
-        // Outer container with hover background
-        var outerContainer = new Border
+        // Hover container with background effect
+        var hoverContainer = new Border
         {
-            Tag = provider,
-            VerticalAlignment = VerticalAlignment.Stretch,
             Background = new SolidColorBrush(Colors.Transparent),
             CornerRadius = new CornerRadius(4),
             Child = barsContainer
         };
 
-        // Add hover effects
-        outerContainer.PointerEntered += (s, e) =>
+        // Outer container with vertical padding for native look
+        var outerContainer = new Border
         {
-            outerContainer.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
+            Tag = provider,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Background = new SolidColorBrush(Colors.Transparent),
+            Padding = new Thickness(0, 0, 0, 0),
+            Child = hoverContainer
         };
-        outerContainer.PointerExited += (s, e) =>
+
+        // Add hover effects to inner container
+        hoverContainer.PointerEntered += (s, e) =>
         {
-            outerContainer.Background = new SolidColorBrush(Colors.Transparent);
+            hoverContainer.Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255));
+        };
+        hoverContainer.PointerExited += (s, e) =>
+        {
+            hoverContainer.Background = new SolidColorBrush(Colors.Transparent);
         };
 
         var panel = new ProviderPanel
@@ -306,9 +322,13 @@ public sealed partial class TaskbarWidgetContent : UserControl
     {
         int totalBars = _providerPanels.Values.Sum(p => p.Bars.Count);
         int providerCount = _providerPanels.Count;
+        // Each bar is BarWidth, with BarSpacing between bars in a provider
+        // ProviderSpacing between providers, plus 8px margin per provider (4+4)
         return (totalBars * BarWidth) +
                ((totalBars - providerCount) * BarSpacing) +
-               ((providerCount - 1) * ProviderSpacing) + 16;
+               ((providerCount - 1) * ProviderSpacing) +
+               (providerCount * 8) + // margins inside each provider panel
+               16; // outer padding
     }
 
     private class ProviderPanel

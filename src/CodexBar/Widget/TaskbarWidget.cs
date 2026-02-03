@@ -14,7 +14,7 @@ namespace CodexBar.Widget;
 /// </summary>
 internal sealed class TaskbarWidget : IDisposable
 {
-    private const int DefaultWidgetWidth = 100;
+    private const int DefaultWidgetWidth = 40;
     private const string WidgetClassName = "CodexBarWidget";
 
     /// <summary>
@@ -74,6 +74,9 @@ internal sealed class TaskbarWidget : IDisposable
 
             // Wire up click event
             _content.Clicked += (s, e) => Clicked?.Invoke(this, EventArgs.Empty);
+
+            // Wire up width change event for dynamic resizing
+            _content.WidthChanged += (s, width) => _injectionHelper?.Resize(width);
 
             // Wrap in transparent grid
             var rootGrid = new Grid
