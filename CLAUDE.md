@@ -15,6 +15,9 @@ dotnet build
 # Build release
 dotnet build --configuration Release
 
+# Run the app (x64)
+dotnet run --project src/CodexBar/CodexBar.csproj -p:Platform=x64
+
 # Publish single-file exe (x64)
 dotnet publish src/CodexBar/CodexBar.csproj --configuration Release --runtime win-x64 --self-contained true -p:Platform=x64 -p:PublishSingleFile=true -p:WindowsPackageType=None -o publish
 ```
@@ -25,6 +28,12 @@ dotnet publish src/CodexBar/CodexBar.csproj --configuration Release --runtime wi
 
 - **CodexBar** (`src/CodexBar/`) - WinUI 3 app with system tray, popup window, and settings UI
 - **CodexBar.Core** (`src/CodexBar.Core/`) - Shared library with provider fetchers, models, and auth logic
+- **TaskbarWidget** (`lib/taskbar-widget/`) - Git submodule for taskbar widget injection
+
+After cloning, initialize the submodule:
+```bash
+git submodule update --init --recursive
+```
 
 ### Provider System
 
@@ -60,6 +69,10 @@ Providers use different auth methods:
 ### Debug Logging
 
 Logs written to `%LOCALAPPDATA%/CodexBar/debug.log` via `DebugLog.Log()`. Check this file when debugging provider API responses.
+
+## Gotchas
+
+- **Platform required**: WinUI 3 requires explicit platform. Use `-p:Platform=x64` for run commands or you'll get architecture errors.
 
 ## Releases
 
