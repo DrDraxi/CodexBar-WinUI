@@ -78,7 +78,17 @@ public class AppSettings
         UsageProvider.Cursor,
         UsageProvider.Gemini,
         UsageProvider.JetBrains,
-        UsageProvider.Augment
+        UsageProvider.Augment,
+        UsageProvider.Kiro,
+        UsageProvider.Amp,
+        UsageProvider.Factory,
+        UsageProvider.Zai,
+        UsageProvider.Kimi,
+        UsageProvider.KimiK2,
+        UsageProvider.MiniMax,
+        UsageProvider.VertexAI,
+        UsageProvider.OpenCode,
+        UsageProvider.Antigravity
     ];
 
     /// <summary>
@@ -87,7 +97,36 @@ public class AppSettings
     public Dictionary<string, string> ManualCookies { get; set; } = new();
 
     /// <summary>
+    /// Per-provider bar visibility for popup window (default: all visible)
+    /// </summary>
+    public Dictionary<string, BarVisibilitySettings> PopupBarVisibility { get; set; } = new();
+
+    /// <summary>
+    /// Per-provider bar visibility for taskbar widget (default: Primary+Secondary+Cost only)
+    /// </summary>
+    public Dictionary<string, BarVisibilitySettings> WidgetBarVisibility { get; set; } = new();
+
+    /// <summary>
     /// Whether the taskbar widget is visible
     /// </summary>
     public bool TaskbarWidgetVisible { get; set; } = true;
+
+    public BarVisibilitySettings GetPopupVisibility(UsageProvider provider) =>
+        PopupBarVisibility.GetValueOrDefault(provider.ToString(), new BarVisibilitySettings());
+
+    public BarVisibilitySettings GetWidgetVisibility(UsageProvider provider) =>
+        WidgetBarVisibility.GetValueOrDefault(provider.ToString(),
+            new BarVisibilitySettings { Tertiary = false, Quaternary = false });
+}
+
+/// <summary>
+/// Per-bar visibility toggles for a provider
+/// </summary>
+public class BarVisibilitySettings
+{
+    public bool Primary { get; set; } = true;
+    public bool Secondary { get; set; } = true;
+    public bool Tertiary { get; set; } = true;
+    public bool Quaternary { get; set; } = true;
+    public bool Cost { get; set; } = true;
 }

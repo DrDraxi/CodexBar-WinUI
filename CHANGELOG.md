@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.6.0] - 2025-02-06
+
+### Added
+- 10 new AI providers: Kiro, Amp, Factory, Zai, Kimi, Kimi K2, MiniMax, Vertex AI, OpenCode, Antigravity
+- Quaternary rate window support (up to 4 usage bars per provider + cost)
+- Per-provider bar visibility settings for both popup and taskbar widget
+- Claude: Sonnet 7d and Opus 7d model-specific usage bars (for Max tier)
+- Bar visibility UI in provider settings with human-readable bar names
+
+### Changed
+- Enabled previously disabled providers: Copilot, Gemini, JetBrains, Augment
+- Widget defaults to showing only Primary + Secondary + Cost bars (model-specific bars hidden to save space)
+- Claude bars now labeled: 5h, 7d, Sonnet 7d, Opus 7d, Extra Usage
+
+### Fixed
+- Popup and widget now render Tertiary and Quaternary bars (previously skipped)
+
 ## [v1.5.1] - 2025-02-06
 
 ### Fixed

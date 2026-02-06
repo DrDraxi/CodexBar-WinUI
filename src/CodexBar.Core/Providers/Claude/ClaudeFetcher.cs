@@ -82,7 +82,7 @@ public class ClaudeFetcher : IProviderFetcher
                 };
             }
 
-            DebugLog.Log("ClaudeOAuth", $"Parsed usage: 5h={usage.FiveHour?.UsagePercent}%, 7d={usage.SevenDay?.UsagePercent}%, opus={usage.SevenDayOpus?.UsagePercent}%");
+            DebugLog.Log("ClaudeOAuth", $"Parsed usage: 5h={usage.FiveHour?.UsagePercent}%, 7d={usage.SevenDay?.UsagePercent}%, sonnet={usage.SevenDaySonnet?.UsagePercent}%, opus={usage.SevenDayOpus?.UsagePercent}%");
             DebugLog.Log("ClaudeOAuth", $"Extra usage: spend={usage.ExtraUsage?.Spend}, limit={usage.ExtraUsage?.Limit}");
 
             // Build extra usage / on-demand cost if available
@@ -105,20 +105,30 @@ public class ClaudeFetcher : IProviderFetcher
                 Primary = usage.FiveHour != null ? new RateWindow
                 {
                     UsedPercent = usage.FiveHour.UsagePercent ?? 0,
-                    WindowMinutes = 300, // 5 hours
-                    ResetsAt = usage.FiveHour.ResetsAtParsed
+                    WindowMinutes = 300,
+                    ResetsAt = usage.FiveHour.ResetsAtParsed,
+                    Label = "5h"
                 } : null,
                 Secondary = usage.SevenDay != null ? new RateWindow
                 {
                     UsedPercent = usage.SevenDay.UsagePercent ?? 0,
-                    WindowMinutes = 10080, // 7 days
-                    ResetsAt = usage.SevenDay.ResetsAtParsed
+                    WindowMinutes = 10080,
+                    ResetsAt = usage.SevenDay.ResetsAtParsed,
+                    Label = "7d"
                 } : null,
-                Tertiary = usage.SevenDayOpus != null ? new RateWindow
+                Tertiary = usage.SevenDaySonnet != null ? new RateWindow
+                {
+                    UsedPercent = usage.SevenDaySonnet.UsagePercent ?? 0,
+                    WindowMinutes = 10080,
+                    ResetsAt = usage.SevenDaySonnet.ResetsAtParsed,
+                    Label = "Sonnet 7d"
+                } : null,
+                Quaternary = usage.SevenDayOpus != null ? new RateWindow
                 {
                     UsedPercent = usage.SevenDayOpus.UsagePercent ?? 0,
                     WindowMinutes = 10080,
-                    ResetsAt = usage.SevenDayOpus.ResetsAtParsed
+                    ResetsAt = usage.SevenDayOpus.ResetsAtParsed,
+                    Label = "Opus 7d"
                 } : null,
                 ProviderCost = extraUsageCost,
                 Identity = new ProviderIdentity

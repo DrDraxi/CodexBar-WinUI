@@ -6,6 +6,7 @@ using Microsoft.UI.Windowing;
 using WinRT.Interop;
 using CodexBar.Core.Models;
 using CodexBar.Core.Providers;
+using CodexBar.Services;
 
 using Color = Windows.UI.Color;
 using Colors = Microsoft.UI.Colors;
@@ -129,17 +130,26 @@ public sealed partial class UsagePopup : Window
         }
 
         card.Opacity = 1.0;
+        var vis = SettingsService.Instance.Settings.GetPopupVisibility(snapshot.Provider);
 
         int barIndex = 0;
-        if (snapshot.Primary != null && barIndex < bars.Count)
+        if (snapshot.Primary != null && vis.Primary && barIndex < bars.Count)
         {
             bars[barIndex++].Value = snapshot.Primary.UsedPercent;
         }
-        if (snapshot.Secondary != null && barIndex < bars.Count)
+        if (snapshot.Secondary != null && vis.Secondary && barIndex < bars.Count)
         {
             bars[barIndex++].Value = snapshot.Secondary.UsedPercent;
         }
-        if (snapshot.ProviderCost != null && barIndex < bars.Count)
+        if (snapshot.Tertiary != null && vis.Tertiary && barIndex < bars.Count)
+        {
+            bars[barIndex++].Value = snapshot.Tertiary.UsedPercent;
+        }
+        if (snapshot.Quaternary != null && vis.Quaternary && barIndex < bars.Count)
+        {
+            bars[barIndex++].Value = snapshot.Quaternary.UsedPercent;
+        }
+        if (snapshot.ProviderCost != null && vis.Cost && barIndex < bars.Count)
         {
             var cost = snapshot.ProviderCost;
             var percent = cost.Limit > 0 ? (cost.Used / cost.Limit) * 100 : 0;
@@ -196,25 +206,23 @@ public sealed partial class UsagePopup : Window
         header.Children.Add(status);
         content.Children.Add(header);
 
-        if (!hasError && snapshot.Primary != null)
+        if (!hasError && snapshot.IsValid)
         {
-            // Primary usage bar with reset time
-            // Use custom label if provided, otherwise default based on whether secondary exists
-            var primaryLabel = snapshot.Primary.Label ?? (snapshot.Secondary != null ? "Session" : "Usage");
-            var primaryResetTime = snapshot.Primary.ResetsAt != null ? snapshot.Primary.ResetTimeDisplay : null;
-            var (primaryRow, primaryBar) = CreateUsageRow(
-                primaryLabel,
-                snapshot.Primary.UsedPercent,
-                colorBrush,
-                primaryResetTime
-            );
-            content.Children.Add(primaryRow);
-            bars.Add(primaryBar);
+            var vis = SettingsService.Instance.Settings.GetPopupVisibility(provider);
 
-            // Secondary usage bar with reset time (if available)
-            if (snapshot.Secondary != null)
+            // Primary usage bar
+            if (snapshot.Primary != null && vis.Primary)
             {
-                // Use custom label if provided, otherwise default to "Weekly"
+                var primaryLabel = snapshot.Primary.Label ?? (snapshot.Secondary != null ? "Session" : "Usage");
+                var primaryResetTime = snapshot.Primary.ResetsAt != null ? snapshot.Primary.ResetTimeDisplay : null;
+                var (primaryRow, primaryBar) = CreateUsageRow(primaryLabel, snapshot.Primary.UsedPercent, colorBrush, primaryResetTime);
+                content.Children.Add(primaryRow);
+                bars.Add(primaryBar);
+            }
+
+            // Secondary usage bar
+            if (snapshot.Secondary != null && vis.Secondary)
+            {
                 var secondaryLabel = snapshot.Secondary.Label ?? "Weekly";
                 var weeklyResetTime = snapshot.Secondary.ResetsAt != null ? snapshot.Secondary.ResetTimeDisplay : null;
                 var (secondaryRow, secondaryBar) = CreateUsageRow(secondaryLabel, snapshot.Secondary.UsedPercent, colorBrush, weeklyResetTime);
@@ -222,8 +230,28 @@ public sealed partial class UsagePopup : Window
                 bars.Add(secondaryBar);
             }
 
-            // On-demand / pay-per-use cost (if available)
-            if (snapshot.ProviderCost != null)
+            // Tertiary usage bar (e.g., Sonnet model-specific)
+            if (snapshot.Tertiary != null && vis.Tertiary)
+            {
+                var tertiaryLabel = snapshot.Tertiary.Label ?? "Tertiary";
+                var tertiaryResetTime = snapshot.Tertiary.ResetsAt != null ? snapshot.Tertiary.ResetTimeDisplay : null;
+                var (tertiaryRow, tertiaryBar) = CreateUsageRow(tertiaryLabel, snapshot.Tertiary.UsedPercent, colorBrush, tertiaryResetTime);
+                content.Children.Add(tertiaryRow);
+                bars.Add(tertiaryBar);
+            }
+
+            // Quaternary usage bar (e.g., Opus model-specific)
+            if (snapshot.Quaternary != null && vis.Quaternary)
+            {
+                var quaternaryLabel = snapshot.Quaternary.Label ?? "Quaternary";
+                var quaternaryResetTime = snapshot.Quaternary.ResetsAt != null ? snapshot.Quaternary.ResetTimeDisplay : null;
+                var (quaternaryRow, quaternaryBar) = CreateUsageRow(quaternaryLabel, snapshot.Quaternary.UsedPercent, colorBrush, quaternaryResetTime);
+                content.Children.Add(quaternaryRow);
+                bars.Add(quaternaryBar);
+            }
+
+            // On-demand / pay-per-use cost
+            if (snapshot.ProviderCost != null && vis.Cost)
             {
                 var cost = snapshot.ProviderCost;
                 var (costRow, costBar) = CreateCostRow(cost.Period ?? "On-Demand", cost.Used, cost.Limit, cost.CurrencyCode);

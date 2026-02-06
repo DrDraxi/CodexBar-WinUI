@@ -11,7 +11,7 @@
             <TextBlock Text="Enable the AI providers you want to track."
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
-            <StackPanel Spacing="12">
+            <StackPanel x:Name="ProvidersPanel" Spacing="12">
                 <!-- Codex -->
                 <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Expander.Header>
@@ -64,8 +64,8 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- Copilot (not yet tested) -->
-                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsEnabled="False" Opacity="0.5">
+                <!-- Copilot -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Expander.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -74,12 +74,12 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="Copilot" FontWeight="SemiBold"/>
-                                <TextBlock Text="GitHub device flow (coming soon)" FontSize="12"
+                                <TextBlock Text="GitHub device flow" FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="CopilotToggle" Grid.Column="1"
                                           Toggled="ProviderToggle_Toggled" Tag="Copilot"
-                                          Margin="0,0,0,0" VerticalAlignment="Center" IsEnabled="False"/>
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
                     </Expander.Header>
                     <StackPanel Spacing="8" Padding="0,8,0,0">
@@ -112,8 +112,8 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- Gemini (not yet tested) -->
-                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsEnabled="False" Opacity="0.5">
+                <!-- Gemini -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Expander.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -122,12 +122,12 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="Gemini" FontWeight="SemiBold"/>
-                                <TextBlock Text="OAuth via CLI credentials (coming soon)" FontSize="12"
+                                <TextBlock Text="Gemini CLI OAuth" FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="GeminiToggle" Grid.Column="1"
                                           Toggled="ProviderToggle_Toggled" Tag="Gemini"
-                                          Margin="0,0,0,0" VerticalAlignment="Center" IsEnabled="False"/>
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
                     </Expander.Header>
                     <StackPanel Spacing="8" Padding="0,8,0,0">
@@ -136,8 +136,8 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- JetBrains (not yet tested) -->
-                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsEnabled="False" Opacity="0.5">
+                <!-- JetBrains -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Expander.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -146,12 +146,12 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="JetBrains" FontWeight="SemiBold"/>
-                                <TextBlock Text="Local IDE config (coming soon)" FontSize="12"
+                                <TextBlock Text="Local IDE config" FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="JetBrainsToggle" Grid.Column="1"
                                           Toggled="ProviderToggle_Toggled" Tag="JetBrains"
-                                          Margin="0,0,0,0" VerticalAlignment="Center" IsEnabled="False"/>
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
                     </Expander.Header>
                     <StackPanel Spacing="8" Padding="0,8,0,0">
@@ -160,8 +160,8 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- Augment (not yet tested) -->
-                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsEnabled="False" Opacity="0.5">
+                <!-- Augment -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Expander.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -170,18 +170,265 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="Augment" FontWeight="SemiBold"/>
-                                <TextBlock Text="Browser cookies (coming soon)" FontSize="12"
+                                <TextBlock Text="Browser cookies" FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="AugmentToggle" Grid.Column="1"
                                           Toggled="ProviderToggle_Toggled" Tag="Augment"
-                                          Margin="0,0,0,0" VerticalAlignment="Center" IsEnabled="False"/>
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
                     </Expander.Header>
                     <StackPanel Spacing="8" Padding="0,8,0,0">
                         <TextBlock Text="Manual Cookie (optional)" FontSize="12"/>
                         <PasswordBox x:Name="AugmentCookieBox" PlaceholderText="Paste Cookie header from augmentcode.com..."
                                      PasswordChanged="CookieBox_PasswordChanged" Tag="Augment"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Kiro -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Kiro" FontWeight="SemiBold"/>
+                                <TextBlock Text="Kiro CLI credentials" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="KiroToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="Kiro"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="Install the Kiro CLI and run 'kiro login' to authenticate" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Amp -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Amp" FontWeight="SemiBold"/>
+                                <TextBlock Text="Browser cookies" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="AmpToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="Amp"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="Manual Cookie (optional)" FontSize="12"/>
+                        <PasswordBox x:Name="AmpCookieBox" PlaceholderText="Paste Cookie header from ampcode.com..."
+                                     PasswordChanged="CookieBox_PasswordChanged" Tag="Amp"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Factory -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Factory" FontWeight="SemiBold"/>
+                                <TextBlock Text="Browser cookies" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="FactoryToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="Factory"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="Manual Cookie (optional)" FontSize="12"/>
+                        <PasswordBox x:Name="FactoryCookieBox" PlaceholderText="Paste Cookie header from app.factory.ai..."
+                                     PasswordChanged="CookieBox_PasswordChanged" Tag="Factory"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Zai -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Zai" FontWeight="SemiBold"/>
+                                <TextBlock Text="API token" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="ZaiToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="Zai"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="API Token" FontSize="12"/>
+                        <PasswordBox x:Name="ZaiCookieBox" PlaceholderText="Paste API token or set ZAI_API_TOKEN env var..."
+                                     PasswordChanged="CookieBox_PasswordChanged" Tag="Zai"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Kimi -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Kimi" FontWeight="SemiBold"/>
+                                <TextBlock Text="Browser cookies or JWT" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="KimiToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="Kimi"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="Manual Cookie (optional)" FontSize="12"/>
+                        <PasswordBox x:Name="KimiCookieBox" PlaceholderText="Paste Cookie header from kimi.com..."
+                                     PasswordChanged="CookieBox_PasswordChanged" Tag="Kimi"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Kimi K2 -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Kimi K2" FontWeight="SemiBold"/>
+                                <TextBlock Text="API key" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="KimiK2Toggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="KimiK2"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="API Key" FontSize="12"/>
+                        <PasswordBox x:Name="KimiK2CookieBox" PlaceholderText="Paste API key or set KIMI_K2_API_KEY env var..."
+                                     PasswordChanged="CookieBox_PasswordChanged" Tag="KimiK2"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- MiniMax -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="MiniMax" FontWeight="SemiBold"/>
+                                <TextBlock Text="API token" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="MiniMaxToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="MiniMax"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="API Token" FontSize="12"/>
+                        <PasswordBox x:Name="MiniMaxCookieBox" PlaceholderText="Paste API token or set MINIMAX_API_TOKEN env var..."
+                                     PasswordChanged="CookieBox_PasswordChanged" Tag="MiniMax"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Vertex AI -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Vertex AI" FontWeight="SemiBold"/>
+                                <TextBlock Text="Google Cloud ADC (gcloud)" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="VertexAIToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="VertexAI"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="Run 'gcloud auth application-default login' to authenticate" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- OpenCode -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="OpenCode" FontWeight="SemiBold"/>
+                                <TextBlock Text="Browser cookies" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="OpenCodeToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="OpenCode"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="Manual Cookie (optional)" FontSize="12"/>
+                        <PasswordBox x:Name="OpenCodeCookieBox" PlaceholderText="Paste Cookie header from opencode.ai..."
+                                     PasswordChanged="CookieBox_PasswordChanged" Tag="OpenCode"/>
+                    </StackPanel>
+                </Expander>
+
+                <!-- Antigravity -->
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Antigravity" FontWeight="SemiBold"/>
+                                <TextBlock Text="Local IDE (experimental)" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="AntigravityToggle" Grid.Column="1"
+                                          Toggled="ProviderToggle_Toggled" Tag="Antigravity"
+                                          Margin="0,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Expander.Header>
+                    <StackPanel Spacing="8" Padding="0,8,0,0">
+                        <TextBlock Text="Detects local Antigravity IDE automatically" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
                 </Expander>
             </StackPanel>

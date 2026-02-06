@@ -10,10 +10,34 @@ public sealed partial class ProvidersSettingsPage : Page
 {
     private bool _isLoading = true;
 
+    // Per-provider bar labels: (slot key, display name)
+    // slot key must match BarVisibilitySettings property names
+    private static readonly Dictionary<UsageProvider, (string Slot, string Label)[]> ProviderBarLabels = new()
+    {
+        [UsageProvider.Codex] = [("Primary", "Session"), ("Secondary", "Weekly"), ("Cost", "Cost")],
+        [UsageProvider.Claude] = [("Primary", "5h"), ("Secondary", "7d"), ("Tertiary", "Sonnet 7d"), ("Quaternary", "Opus 7d"), ("Cost", "Extra Usage")],
+        [UsageProvider.Copilot] = [("Primary", "Usage"), ("Cost", "Cost")],
+        [UsageProvider.Cursor] = [("Primary", "Auto"), ("Secondary", "Named"), ("Cost", "On-Demand")],
+        [UsageProvider.Gemini] = [("Primary", "Usage"), ("Secondary", "Weekly")],
+        [UsageProvider.JetBrains] = [("Primary", "Usage")],
+        [UsageProvider.Augment] = [("Primary", "Usage"), ("Cost", "Credits")],
+        [UsageProvider.Kiro] = [("Primary", "Credits"), ("Secondary", "Bonus")],
+        [UsageProvider.Amp] = [("Primary", "Daily")],
+        [UsageProvider.Factory] = [("Primary", "Standard"), ("Secondary", "Premium")],
+        [UsageProvider.Zai] = [("Primary", "Tokens"), ("Secondary", "MCP")],
+        [UsageProvider.Kimi] = [("Primary", "Weekly"), ("Secondary", "5h Rate")],
+        [UsageProvider.KimiK2] = [("Primary", "Credits")],
+        [UsageProvider.MiniMax] = [("Primary", "Plan")],
+        [UsageProvider.VertexAI] = [("Primary", "Quota")],
+        [UsageProvider.OpenCode] = [("Primary", "5h"), ("Secondary", "Weekly")],
+        [UsageProvider.Antigravity] = [("Primary", "Monthly")],
+    };
+
     public ProvidersSettingsPage()
     {
         this.InitializeComponent();
         LoadSettings();
+        InjectBarVisibilitySections();
         _isLoading = false;
     }
 
@@ -29,12 +53,29 @@ public sealed partial class ProvidersSettingsPage : Page
         GeminiToggle.IsOn = enabled.Contains(UsageProvider.Gemini);
         JetBrainsToggle.IsOn = enabled.Contains(UsageProvider.JetBrains);
         AugmentToggle.IsOn = enabled.Contains(UsageProvider.Augment);
+        KiroToggle.IsOn = enabled.Contains(UsageProvider.Kiro);
+        AmpToggle.IsOn = enabled.Contains(UsageProvider.Amp);
+        FactoryToggle.IsOn = enabled.Contains(UsageProvider.Factory);
+        ZaiToggle.IsOn = enabled.Contains(UsageProvider.Zai);
+        KimiToggle.IsOn = enabled.Contains(UsageProvider.Kimi);
+        KimiK2Toggle.IsOn = enabled.Contains(UsageProvider.KimiK2);
+        MiniMaxToggle.IsOn = enabled.Contains(UsageProvider.MiniMax);
+        VertexAIToggle.IsOn = enabled.Contains(UsageProvider.VertexAI);
+        OpenCodeToggle.IsOn = enabled.Contains(UsageProvider.OpenCode);
+        AntigravityToggle.IsOn = enabled.Contains(UsageProvider.Antigravity);
 
-        // Load manual cookies (masked)
+        // Load manual cookies/tokens (masked)
         LoadCookieBox(CodexCookieBox, "Codex");
         LoadCookieBox(ClaudeCookieBox, "Claude");
         LoadCookieBox(CursorCookieBox, "Cursor");
         LoadCookieBox(AugmentCookieBox, "Augment");
+        LoadCookieBox(AmpCookieBox, "Amp");
+        LoadCookieBox(FactoryCookieBox, "Factory");
+        LoadCookieBox(ZaiCookieBox, "Zai");
+        LoadCookieBox(KimiCookieBox, "Kimi");
+        LoadCookieBox(KimiK2CookieBox, "KimiK2");
+        LoadCookieBox(MiniMaxCookieBox, "MiniMax");
+        LoadCookieBox(OpenCodeCookieBox, "OpenCode");
     }
 
     private void LoadCookieBox(PasswordBox box, string provider)
@@ -47,6 +88,172 @@ public sealed partial class ProvidersSettingsPage : Page
                 box.PlaceholderText = "Cookie saved (paste new to replace)";
             }
         }
+    }
+
+    private void InjectBarVisibilitySections()
+    {
+        foreach (var child in ProvidersPanel.Children)
+        {
+            if (child is not Expander expander) continue;
+
+            // Find the provider name from the ToggleSwitch Tag inside the header
+            string? providerName = null;
+            if (expander.Header is Grid headerGrid)
+            {
+                foreach (var headerChild in headerGrid.Children)
+                {
+                    if (headerChild is ToggleSwitch toggle && toggle.Tag is string tag)
+                    {
+                        providerName = tag;
+                        break;
+                    }
+                }
+            }
+            if (providerName == null || !Enum.TryParse<UsageProvider>(providerName, out var provider))
+                continue;
+
+            // Get the content StackPanel
+            if (expander.Content is not StackPanel contentPanel)
+                continue;
+
+            // Build bar visibility section
+            var visSection = CreateBarVisibilitySection(provider);
+            contentPanel.Children.Add(visSection);
+        }
+    }
+
+    private StackPanel CreateBarVisibilitySection(UsageProvider provider)
+    {
+        var settings = SettingsService.Instance.Settings;
+        var popupVis = settings.GetPopupVisibility(provider);
+        var widgetVis = settings.GetWidgetVisibility(provider);
+        var providerName = provider.ToString();
+
+        var section = new StackPanel { Spacing = 4, Margin = new Thickness(0, 8, 0, 0) };
+
+        section.Children.Add(new TextBlock
+        {
+            Text = "Bar Visibility",
+            FontSize = 12,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+        });
+
+        // Header row
+        var headerRow = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+        headerRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        headerRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+        headerRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+
+        var colLabel = new TextBlock { Text = "Bar", FontSize = 11, Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
+        var popupLabel = new TextBlock { Text = "Popup", FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
+        var widgetLabel = new TextBlock { Text = "Widget", FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
+        Grid.SetColumn(colLabel, 0);
+        Grid.SetColumn(popupLabel, 1);
+        Grid.SetColumn(widgetLabel, 2);
+        headerRow.Children.Add(colLabel);
+        headerRow.Children.Add(popupLabel);
+        headerRow.Children.Add(widgetLabel);
+        section.Children.Add(headerRow);
+
+        // One row per bar slot for this provider
+        var bars = ProviderBarLabels.GetValueOrDefault(provider,
+            [("Primary", "Primary"), ("Secondary", "Secondary"), ("Cost", "Cost")]);
+
+        foreach (var (slot, displayName) in bars)
+        {
+            bool popupChecked = slot switch
+            {
+                "Primary" => popupVis.Primary,
+                "Secondary" => popupVis.Secondary,
+                "Tertiary" => popupVis.Tertiary,
+                "Quaternary" => popupVis.Quaternary,
+                "Cost" => popupVis.Cost,
+                _ => true
+            };
+            bool widgetChecked = slot switch
+            {
+                "Primary" => widgetVis.Primary,
+                "Secondary" => widgetVis.Secondary,
+                "Tertiary" => widgetVis.Tertiary,
+                "Quaternary" => widgetVis.Quaternary,
+                "Cost" => widgetVis.Cost,
+                _ => true
+            };
+
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+
+            var label = new TextBlock { Text = displayName, FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(label, 0);
+            row.Children.Add(label);
+
+            var popupCb = new CheckBox
+            {
+                IsChecked = popupChecked,
+                Tag = $"{providerName}|Popup|{slot}",
+                MinWidth = 0,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            popupCb.Checked += BarVisibility_Changed;
+            popupCb.Unchecked += BarVisibility_Changed;
+            Grid.SetColumn(popupCb, 1);
+            row.Children.Add(popupCb);
+
+            var widgetCb = new CheckBox
+            {
+                IsChecked = widgetChecked,
+                Tag = $"{providerName}|Widget|{slot}",
+                MinWidth = 0,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            widgetCb.Checked += BarVisibility_Changed;
+            widgetCb.Unchecked += BarVisibility_Changed;
+            Grid.SetColumn(widgetCb, 2);
+            row.Children.Add(widgetCb);
+
+            section.Children.Add(row);
+        }
+
+        return section;
+    }
+
+    private void BarVisibility_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_isLoading) return;
+        if (sender is not CheckBox cb || cb.Tag is not string tag) return;
+
+        var parts = tag.Split('|');
+        if (parts.Length != 3) return;
+
+        var providerName = parts[0];
+        var target = parts[1]; // "Popup" or "Widget"
+        var slot = parts[2];
+        var isChecked = cb.IsChecked == true;
+
+        var settings = SettingsService.Instance.Settings;
+        var dict = target == "Popup" ? settings.PopupBarVisibility : settings.WidgetBarVisibility;
+
+        if (!dict.TryGetValue(providerName, out var vis))
+        {
+            // Create with appropriate defaults
+            vis = target == "Popup"
+                ? new BarVisibilitySettings()
+                : new BarVisibilitySettings { Tertiary = false, Quaternary = false };
+            dict[providerName] = vis;
+        }
+
+        switch (slot)
+        {
+            case "Primary": vis.Primary = isChecked; break;
+            case "Secondary": vis.Secondary = isChecked; break;
+            case "Tertiary": vis.Tertiary = isChecked; break;
+            case "Quaternary": vis.Quaternary = isChecked; break;
+            case "Cost": vis.Cost = isChecked; break;
+        }
+
+        SettingsService.Instance.Save();
     }
 
     private void ProviderToggle_Toggled(object sender, RoutedEventArgs e)

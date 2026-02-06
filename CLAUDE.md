@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CodexBar is a Windows system tray application that tracks usage limits for AI coding assistants (Cursor, Claude, Codex CLI, etc.). It's a WinUI 3 port of the original macOS CodexBar.
+CodexBar is a Windows system tray application that tracks usage limits for AI coding assistants. It's a WinUI 3 port of the original macOS CodexBar. Supports 17 providers: Claude, Codex, Copilot, Cursor, Gemini, JetBrains, Augment, Kiro, Amp, Factory, Zai, Kimi, Kimi K2, MiniMax, Vertex AI, OpenCode, and Antigravity.
 
 ## Build Commands
 
@@ -47,16 +47,20 @@ Providers are registered in `ProviderRegistry.cs`. Each provider folder (e.g., `
 
 ### Key Models
 
-- `UsageSnapshot` - Contains Primary/Secondary/Tertiary `RateWindow` plus optional `ProviderCost`
+- `UsageSnapshot` - Contains Primary/Secondary/Tertiary/Quaternary `RateWindow` plus optional `ProviderCost`
 - `RateWindow` - Usage percentage, reset time, optional custom label
-- `ProviderCostSnapshot` - On-demand/pay-per-use tracking (e.g., Cursor on-demand spend)
+- `ProviderCostSnapshot` - On-demand/pay-per-use tracking (e.g., Cursor on-demand spend, Claude extra usage)
+- `BarVisibilitySettings` - Per-provider toggles for which bars show in popup vs widget
 
 ### Authentication
 
 Providers use different auth methods:
-- **Browser cookies**: Extracted from Chrome/Edge SQLite databases (`Auth/ChromeCookieExtractor.cs`)
-- **OAuth tokens**: Read from CLI config files (e.g., `~/.claude/.credentials.json`, `~/.codex/auth.json`)
-- **Manual cookies**: User can paste cookies in settings, stored via `ManualCookieStore`
+- **Browser cookies**: Extracted from Chrome/Edge SQLite databases (`Auth/ChromeCookieExtractor.cs`) — Cursor, Amp, Factory, Kimi, OpenCode, Augment
+- **OAuth tokens**: Read from CLI config files (e.g., `~/.claude/.credentials.json`, `~/.codex/auth.json`) — Claude, Codex, Gemini
+- **API tokens**: From environment variables or config files — Zai (`ZAI_API_TOKEN`), KimiK2 (`KIMI_K2_API_KEY`), MiniMax (`MINIMAX_API_TOKEN`)
+- **CLI credentials**: Local CLI tools — Kiro (`~/.kiro/usage.json` or `kiro usage --json`), VertexAI (`gcloud` ADC)
+- **Local detection**: Process/port probing — Antigravity, JetBrains
+- **Manual cookies/tokens**: User can paste cookies or tokens in settings, stored via `ManualCookieStore`
 
 ### App Lifecycle
 

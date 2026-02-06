@@ -149,22 +149,38 @@ public sealed partial class TaskbarWidgetContent : UserControl
             Bars = new List<(Rectangle Back, Rectangle Fill, string Label)>()
         };
 
-        // Create bars for primary, secondary, and cost
-        if (snapshot.Primary != null)
+        // Create bars based on widget visibility settings
+        var vis = SettingsService.Instance.Settings.GetWidgetVisibility(provider);
+
+        if (snapshot.Primary != null && vis.Primary)
         {
             var (back, fill) = CreateBar(color);
             barsContainer.Children.Add(CreateBarContainer(back, fill));
             panel.Bars.Add((back, fill, snapshot.Primary.Label ?? "Usage"));
         }
 
-        if (snapshot.Secondary != null)
+        if (snapshot.Secondary != null && vis.Secondary)
         {
             var (back, fill) = CreateBar(color);
             barsContainer.Children.Add(CreateBarContainer(back, fill));
             panel.Bars.Add((back, fill, snapshot.Secondary.Label ?? "Weekly"));
         }
 
-        if (snapshot.ProviderCost != null)
+        if (snapshot.Tertiary != null && vis.Tertiary)
+        {
+            var (back, fill) = CreateBar(color);
+            barsContainer.Children.Add(CreateBarContainer(back, fill));
+            panel.Bars.Add((back, fill, snapshot.Tertiary.Label ?? "Tertiary"));
+        }
+
+        if (snapshot.Quaternary != null && vis.Quaternary)
+        {
+            var (back, fill) = CreateBar(color);
+            barsContainer.Children.Add(CreateBarContainer(back, fill));
+            panel.Bars.Add((back, fill, snapshot.Quaternary.Label ?? "Quaternary"));
+        }
+
+        if (snapshot.ProviderCost != null && vis.Cost)
         {
             var costColor = new SolidColorBrush(Colors.Orange);
             var (back, fill) = CreateBar(costColor);
@@ -225,12 +241,13 @@ public sealed partial class TaskbarWidgetContent : UserControl
     private void UpdateProviderPanel(ProviderPanel panel, UsageSnapshot snapshot)
     {
         var info = ProviderRegistry.GetProviderInfo(panel.Provider);
+        var vis = SettingsService.Instance.Settings.GetWidgetVisibility(panel.Provider);
         var tooltipLines = new List<string> { info.Name };
 
         int barIndex = 0;
 
         // Update primary bar
-        if (snapshot.Primary != null && barIndex < panel.Bars.Count)
+        if (snapshot.Primary != null && vis.Primary && barIndex < panel.Bars.Count)
         {
             var (back, fill, label) = panel.Bars[barIndex];
             var percent = snapshot.Primary.UsedPercent;
@@ -242,7 +259,7 @@ public sealed partial class TaskbarWidgetContent : UserControl
         }
 
         // Update secondary bar
-        if (snapshot.Secondary != null && barIndex < panel.Bars.Count)
+        if (snapshot.Secondary != null && vis.Secondary && barIndex < panel.Bars.Count)
         {
             var (back, fill, label) = panel.Bars[barIndex];
             var percent = snapshot.Secondary.UsedPercent;
@@ -253,8 +270,32 @@ public sealed partial class TaskbarWidgetContent : UserControl
             barIndex++;
         }
 
+        // Update tertiary bar
+        if (snapshot.Tertiary != null && vis.Tertiary && barIndex < panel.Bars.Count)
+        {
+            var (back, fill, label) = panel.Bars[barIndex];
+            var percent = snapshot.Tertiary.UsedPercent;
+            UpdateBarFill(fill, percent);
+
+            var resetText = snapshot.Tertiary.ResetsAt != null ? $" (resets {snapshot.Tertiary.ResetTimeDisplay})" : "";
+            tooltipLines.Add($"{label}: {percent:F0}%{resetText}");
+            barIndex++;
+        }
+
+        // Update quaternary bar
+        if (snapshot.Quaternary != null && vis.Quaternary && barIndex < panel.Bars.Count)
+        {
+            var (back, fill, label) = panel.Bars[barIndex];
+            var percent = snapshot.Quaternary.UsedPercent;
+            UpdateBarFill(fill, percent);
+
+            var resetText = snapshot.Quaternary.ResetsAt != null ? $" (resets {snapshot.Quaternary.ResetTimeDisplay})" : "";
+            tooltipLines.Add($"{label}: {percent:F0}%{resetText}");
+            barIndex++;
+        }
+
         // Update cost bar
-        if (snapshot.ProviderCost != null && barIndex < panel.Bars.Count)
+        if (snapshot.ProviderCost != null && vis.Cost && barIndex < panel.Bars.Count)
         {
             var (back, fill, label) = panel.Bars[barIndex];
             var cost = snapshot.ProviderCost;

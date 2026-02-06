@@ -21,9 +21,14 @@ public record UsageSnapshot
     public RateWindow? Secondary { get; init; }
 
     /// <summary>
-    /// Tertiary rate window (model-specific, e.g., Opus limit)
+    /// Tertiary rate window (model-specific, e.g., Sonnet limit)
     /// </summary>
     public RateWindow? Tertiary { get; init; }
+
+    /// <summary>
+    /// Quaternary rate window (model-specific, e.g., Opus limit)
+    /// </summary>
+    public RateWindow? Quaternary { get; init; }
 
     /// <summary>
     /// Pay-per-use / on-demand cost tracking (separate from rate limits)
@@ -48,7 +53,7 @@ public record UsageSnapshot
     /// <summary>
     /// Whether this snapshot contains valid data
     /// </summary>
-    public bool IsValid => Error == null && (Primary != null || Secondary != null || ProviderCost != null);
+    public bool IsValid => Error == null && (Primary != null || Secondary != null || Tertiary != null || Quaternary != null || ProviderCost != null);
 }
 
 /// <summary>
