@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CodexBar.Core.Logging;
@@ -44,11 +45,30 @@ public record ClaudeOAuthData
     public bool IsExpired => ExpiresAt != null && DateTimeOffset.FromUnixTimeMilliseconds(ExpiresAt.Value) < DateTimeOffset.UtcNow;
 }
 
+internal record TokenRefreshResponse
+{
+    [JsonPropertyName("access_token")]
+    public string? AccessToken { get; init; }
+
+    [JsonPropertyName("refresh_token")]
+    public string? RefreshToken { get; init; }
+
+    [JsonPropertyName("expires_in")]
+    public long? ExpiresIn { get; init; }
+
+    [JsonPropertyName("token_type")]
+    public string? TokenType { get; init; }
+}
+
 /// <summary>
 /// Helper to load Claude credentials from disk
 /// </summary>
 public static class ClaudeCredentialsLoader
 {
+    private static readonly HttpClient HttpClient = new();
+    private const string RefreshEndpoint = "https://platform.claude.com/v1/oauth/token";
+    private const string ClientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
+
     /// <summary>
     /// Try to load Claude OAuth credentials from known locations
     /// </summary>
@@ -94,6 +114,100 @@ public static class ClaudeCredentialsLoader
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Load credentials with automatic token refresh if expired
+    /// </summary>
+    public static async Task<ClaudeOAuthData?> LoadWithAutoRefreshAsync()
+    {
+        var credentials = await LoadAsync();
+        if (credentials == null) return null;
+
+        if (!credentials.IsExpired)
+            return credentials;
+
+        if (string.IsNullOrEmpty(credentials.RefreshToken))
+        {
+            DebugLog.Log("ClaudeCredentials", "Access token expired but no refresh token available");
+            return null;
+        }
+
+        DebugLog.Log("ClaudeCredentials", "Access token expired, attempting auto-refresh");
+
+        try
+        {
+            var refreshed = await RefreshTokenAsync(credentials);
+            if (refreshed != null)
+            {
+                await SaveCredentialsAsync(refreshed);
+                DebugLog.Log("ClaudeCredentials", "Token refresh successful");
+                return refreshed;
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Log("ClaudeCredentials", $"Token refresh failed: {ex.Message}");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Refresh an expired OAuth token using the refresh token
+    /// </summary>
+    public static async Task<ClaudeOAuthData?> RefreshTokenAsync(ClaudeOAuthData credentials)
+    {
+        if (string.IsNullOrEmpty(credentials.RefreshToken))
+            return null;
+
+        var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = credentials.RefreshToken,
+            ["client_id"] = ClientId
+        });
+
+        var response = await HttpClient.PostAsync(RefreshEndpoint, content);
+        var json = await response.Content.ReadAsStringAsync();
+        DebugLog.Log("ClaudeCredentials", $"Refresh response: {response.StatusCode}, Body (truncated): {json.Substring(0, Math.Min(200, json.Length))}");
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var tokenResponse = JsonSerializer.Deserialize<TokenRefreshResponse>(json);
+        if (tokenResponse?.AccessToken == null)
+            return null;
+
+        var expiresAt = tokenResponse.ExpiresIn != null
+            ? DateTimeOffset.UtcNow.AddSeconds(tokenResponse.ExpiresIn.Value).ToUnixTimeMilliseconds()
+            : credentials.ExpiresAt;
+
+        return credentials with
+        {
+            AccessToken = tokenResponse.AccessToken,
+            RefreshToken = tokenResponse.RefreshToken ?? credentials.RefreshToken,
+            ExpiresAt = expiresAt
+        };
+    }
+
+    /// <summary>
+    /// Save refreshed credentials back to the credentials file
+    /// </summary>
+    private static async Task SaveCredentialsAsync(ClaudeOAuthData credentials)
+    {
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var path = Path.Combine(userProfile, ".claude", ".credentials.json");
+
+        var wrapper = new ClaudeCredentials { ClaudeAiOauth = credentials };
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        var json = JsonSerializer.Serialize(wrapper, options);
+        await File.WriteAllTextAsync(path, json);
+        DebugLog.Log("ClaudeCredentials", $"Saved refreshed credentials to {path}");
     }
 
     /// <summary>

@@ -20,8 +20,11 @@ public class ClaudeFetcher : IProviderFetcher
         var credentials = await ClaudeCredentialsLoader.LoadAsync();
         var hasToken = credentials?.AccessToken != null;
         var hasScope = credentials?.HasProfileScope ?? false;
-        DebugLog.Log("ClaudeOAuth", $"IsAvailable: hasToken={hasToken}, hasProfileScope={hasScope}, path={ClaudeCredentialsLoader.GetCredentialsPath()}");
-        return hasToken && hasScope;
+        var hasRefreshToken = !string.IsNullOrEmpty(credentials?.RefreshToken);
+        var isExpired = credentials?.IsExpired ?? false;
+        DebugLog.Log("ClaudeOAuth", $"IsAvailable: hasToken={hasToken}, hasProfileScope={hasScope}, isExpired={isExpired}, hasRefreshToken={hasRefreshToken}, path={ClaudeCredentialsLoader.GetCredentialsPath()}");
+        // Available if we have a valid token, or an expired token with a refresh token
+        return hasToken && hasScope && (!isExpired || hasRefreshToken);
     }
 
     public async Task<UsageSnapshot> FetchAsync()
@@ -29,7 +32,7 @@ public class ClaudeFetcher : IProviderFetcher
         try
         {
             DebugLog.Log("ClaudeOAuth", "Starting FetchAsync");
-            var credentials = await ClaudeCredentialsLoader.LoadAsync();
+            var credentials = await ClaudeCredentialsLoader.LoadWithAutoRefreshAsync();
             if (credentials?.AccessToken == null)
             {
                 var debugPath = ClaudeCredentialsLoader.GetCredentialsPath();
@@ -54,10 +57,24 @@ public class ClaudeFetcher : IProviderFetcher
                 };
             }
 
-            var usage = await FetchOAuthUsageAsync(credentials.AccessToken);
+            var (usage, statusCode) = await FetchOAuthUsageAsync(credentials.AccessToken);
+
+            // If we got a 401, try refreshing the token once and retrying
+            if (statusCode == 401 && !string.IsNullOrEmpty(credentials.RefreshToken))
+            {
+                DebugLog.Log("ClaudeOAuth", "Got 401, attempting token refresh and retry");
+                var refreshed = await ClaudeCredentialsLoader.RefreshTokenAsync(credentials);
+                if (refreshed?.AccessToken != null)
+                {
+                    DebugLog.Log("ClaudeOAuth", "Token refresh successful on 401 retry");
+                    credentials = refreshed;
+                    (usage, statusCode) = await FetchOAuthUsageAsync(credentials.AccessToken);
+                }
+            }
+
             if (usage == null)
             {
-                DebugLog.Log("ClaudeOAuth", "FetchOAuthUsageAsync returned null");
+                DebugLog.Log("ClaudeOAuth", $"FetchOAuthUsageAsync returned null (status={statusCode})");
                 return new UsageSnapshot
                 {
                     Provider = UsageProvider.Claude,
@@ -121,7 +138,7 @@ public class ClaudeFetcher : IProviderFetcher
         }
     }
 
-    private static async Task<ClaudeUsageResponse?> FetchOAuthUsageAsync(string accessToken)
+    private static async Task<(ClaudeUsageResponse? Usage, int StatusCode)> FetchOAuthUsageAsync(string accessToken)
     {
         DebugLog.Log("ClaudeOAuth", $"Fetching from {OAuthUsageUrl}");
         using var request = new HttpRequestMessage(HttpMethod.Get, OAuthUsageUrl);
@@ -129,15 +146,16 @@ public class ClaudeFetcher : IProviderFetcher
         request.Headers.Add("anthropic-beta", "oauth-2025-04-20");
 
         var response = await HttpClient.SendAsync(request);
+        var statusCode = (int)response.StatusCode;
         var json = await response.Content.ReadAsStringAsync();
         DebugLog.Log("ClaudeOAuth", $"Response: {response.StatusCode}, Body (truncated): {json.Substring(0, Math.Min(200, json.Length))}");
 
         if (!response.IsSuccessStatusCode)
         {
-            return null;
+            return (null, statusCode);
         }
 
-        return JsonSerializer.Deserialize<ClaudeUsageResponse>(json);
+        return (JsonSerializer.Deserialize<ClaudeUsageResponse>(json), statusCode);
     }
 
     private static string FormatPlanName(string? subscriptionType)

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.1] - 2025-02-06
+
+### Fixed
+- Claude provider: automatically refresh expired OAuth tokens using the refresh token
+- Claude provider: retry on 401 responses with a fresh token before failing
+- Claude provider: expired tokens with a valid refresh token now correctly report as available
+
+## [v1.5.0] - 2025-02-05
+
 ### Added
 - Dynamic widget resizing when provider count changes
 
