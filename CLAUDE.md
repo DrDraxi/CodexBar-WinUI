@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CodexBar is a Windows system tray application that tracks usage limits for AI coding assistants. It's a WinUI 3 port of the original macOS CodexBar. Supports 17 providers: Claude, Codex, Copilot, Cursor, Gemini, JetBrains, Augment, Kiro, Amp, Factory, Zai, Kimi, Kimi K2, MiniMax, Vertex AI, OpenCode, and Antigravity.
+CodexBar is a Windows system tray application that tracks usage limits for AI coding assistants, based on the original macOS CodexBar. The taskbar widget uses Win32 GDI rendering via the TaskbarWidget submodule; settings and popup windows use WinUI 3/XAML. Supports 17 providers: Claude, Codex, Copilot, Cursor, Gemini, JetBrains, Augment, Kiro, Amp, Factory, Zai, Kimi, Kimi K2, MiniMax, Vertex AI, OpenCode, and Antigravity.
 
 ## Build Commands
 
@@ -26,9 +26,9 @@ dotnet publish src/CodexBar/CodexBar.csproj --configuration Release --runtime wi
 
 ### Solution Structure
 
-- **CodexBar** (`src/CodexBar/`) - WinUI 3 app with system tray, popup window, and settings UI
+- **CodexBar** (`src/CodexBar/`) - App host: WinUI 3 for settings/popup windows, Win32 GDI for taskbar widget (`Widget/CodexBarWidget.cs`)
 - **CodexBar.Core** (`src/CodexBar.Core/`) - Shared library with provider fetchers, models, and auth logic
-- **TaskbarWidget** (`lib/taskbar-widget/`) - Git submodule for taskbar widget injection
+- **TaskbarWidget** (`lib/taskbar-widget/`) - Git submodule for immediate-mode GDI widget toolkit
 
 After cloning, initialize the submodule:
 ```bash
