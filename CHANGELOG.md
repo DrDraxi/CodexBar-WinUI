@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v2.0.0] - 2026-02-12
+
+### Changed
+- Widget rendering migrated from WinUI 3 XAML to pure Win32 GDI via `TaskbarWidget.Widget` API
+- Widget code reduced from ~380 lines XAML + ~185 lines wrapper to ~160 lines
+- No longer requires `DesktopWindowXamlSource` for taskbar widget
+
+### Added
+- Drag-to-reorder support — reorder widgets by dragging
+- Cross-widget atomic repositioning when widget resizes
+
+### Removed
+- `TaskbarWidgetContent.xaml` / `.xaml.cs` (replaced by GDI render callback)
+- `TaskbarWidget.cs` wrapper (replaced by `CodexBarWidget.cs`)
+- `TaskbarStructureWatcher` and `Interop/Native.cs` (Widget API handles positioning)
+
 ## [v1.6.0] - 2025-02-06
 
 ### Added
