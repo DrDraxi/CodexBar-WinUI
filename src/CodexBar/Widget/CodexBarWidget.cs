@@ -82,11 +82,11 @@ internal sealed class CodexBarWidget : IDisposable
                             int x = ProviderPaddingDip;
                             foreach (var (percent, color) in bars)
                             {
-                                canvas.DrawFilledRect(x, 0, BarWidthDip, BarHeightDip, GrayBg);
+                                canvas.DrawFilledRoundedRect(x, 0, BarWidthDip, BarHeightDip, 2, GrayBg);
 
                                 int fillH = (int)(BarHeightDip * Math.Min(percent, 100) / 100);
                                 if (fillH > 0)
-                                    canvas.DrawFilledRect(x, BarHeightDip - fillH, BarWidthDip, fillH, color);
+                                    canvas.DrawFilledRoundedRect(x, BarHeightDip - fillH, BarWidthDip, fillH, 2, color);
 
                                 x += BarWidthDip + BarSpacingDip;
                             }
