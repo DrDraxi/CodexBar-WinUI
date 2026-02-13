@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CodexBar.Core.Models;
 
 namespace CodexBar.Services;
@@ -111,12 +112,38 @@ public class AppSettings
     /// </summary>
     public bool TaskbarWidgetVisible { get; set; } = true;
 
+    /// <summary>
+    /// Custom display order for providers (list of provider name strings).
+    /// Providers not in the list fall back to enum order at the end.
+    /// </summary>
+    public List<string>? ProviderOrder { get; set; }
+
     public BarVisibilitySettings GetPopupVisibility(UsageProvider provider) =>
         PopupBarVisibility.GetValueOrDefault(provider.ToString(), new BarVisibilitySettings());
 
     public BarVisibilitySettings GetWidgetVisibility(UsageProvider provider) =>
         WidgetBarVisibility.GetValueOrDefault(provider.ToString(),
             new BarVisibilitySettings { Tertiary = false, Quaternary = false });
+
+    /// <summary>
+    /// Returns the entries of the dictionary ordered by saved ProviderOrder,
+    /// with any unlisted providers appended in enum order.
+    /// </summary>
+    public IEnumerable<KeyValuePair<UsageProvider, T>> GetOrderedProviders<T>(Dictionary<UsageProvider, T> dict)
+    {
+        if (ProviderOrder == null || ProviderOrder.Count == 0)
+            return dict.OrderBy(kv => kv.Key);
+
+        var orderLookup = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (int i = 0; i < ProviderOrder.Count; i++)
+            orderLookup[ProviderOrder[i]] = i;
+
+        return dict.OrderBy(kv =>
+        {
+            var name = kv.Key.ToString();
+            return orderLookup.TryGetValue(name, out var idx) ? idx : int.MaxValue;
+        }).ThenBy(kv => kv.Key);
+    }
 }
 
 /// <summary>

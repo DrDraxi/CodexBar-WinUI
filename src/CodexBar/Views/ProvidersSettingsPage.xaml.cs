@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -9,6 +10,7 @@ namespace CodexBar.Views;
 public sealed partial class ProvidersSettingsPage : Page
 {
     private bool _isLoading = true;
+    private readonly ObservableCollection<object> _providerItems = new();
 
     // Per-provider bar labels: (slot key, display name)
     // slot key must match BarVisibilitySettings property names
@@ -36,9 +38,120 @@ public sealed partial class ProvidersSettingsPage : Page
     public ProvidersSettingsPage()
     {
         this.InitializeComponent();
+
+        // Move XAML items into ObservableCollection so CanReorderItems works properly
+        var xamlItems = ProvidersListView.Items.Cast<object>().ToList();
+        ProvidersListView.Items.Clear();
+        foreach (var item in xamlItems)
+            _providerItems.Add(item);
+        ProvidersListView.ItemsSource = _providerItems;
+
+        ApplySavedOrder();
+        WrapExpandersWithGrips();
         LoadSettings();
         InjectBarVisibilitySections();
         _isLoading = false;
+
+        // Listen for any collection changes (drag reorder or button moves) to persist order
+        _providerItems.CollectionChanged += (_, _) =>
+        {
+            if (!_isLoading) SaveCurrentOrder();
+        };
+    }
+
+    private void ApplySavedOrder()
+    {
+        var order = SettingsService.Instance.Settings.ProviderOrder;
+        if (order == null || order.Count == 0) return;
+
+        var orderLookup = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (int i = 0; i < order.Count; i++)
+            orderLookup[order[i]] = i;
+
+        var sorted = _providerItems
+            .Select(item =>
+            {
+                var name = GetProviderNameFromItem(item);
+                int key = name != null && orderLookup.TryGetValue(name, out var idx) ? idx : int.MaxValue;
+                return (item, key);
+            })
+            .OrderBy(x => x.key)
+            .Select(x => x.item)
+            .ToList();
+
+        _providerItems.Clear();
+        foreach (var item in sorted)
+            _providerItems.Add(item);
+    }
+
+    private void WrapExpandersWithGrips()
+    {
+        var expanders = _providerItems.OfType<Expander>().ToList();
+        _providerItems.Clear();
+
+        foreach (var expander in expanders)
+        {
+            var wrapper = new Grid();
+            wrapper.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            wrapper.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Grip area outside the Expander — pointer events here propagate
+            // to the ListViewItem, enabling drag-reorder on collapsed items.
+            var grip = new FontIcon
+            {
+                Glyph = "\uE76F",
+                FontSize = 14,
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 14, 8, 0)
+            };
+            Grid.SetColumn(grip, 0);
+            Grid.SetColumn(expander, 1);
+
+            wrapper.Children.Add(grip);
+            wrapper.Children.Add(expander);
+
+            _providerItems.Add(wrapper);
+        }
+    }
+
+    private void SaveCurrentOrder()
+    {
+        var order = new List<string>();
+        foreach (var item in _providerItems)
+        {
+            var name = GetProviderNameFromItem(item);
+            if (name != null)
+                order.Add(name);
+        }
+
+        SettingsService.Instance.Settings.ProviderOrder = order;
+        SettingsService.Instance.Save();
+    }
+
+    private static Expander? GetExpanderFromItem(object? item)
+    {
+        if (item is Expander exp) return exp;
+        if (item is Grid grid)
+        {
+            foreach (var child in grid.Children)
+            {
+                if (child is Expander e) return e;
+            }
+        }
+        return null;
+    }
+
+    private static string? GetProviderNameFromItem(object? item)
+    {
+        var expander = GetExpanderFromItem(item);
+        if (expander?.Header is not Grid headerGrid) return null;
+        foreach (var child in headerGrid.Children)
+        {
+            if (child is ToggleSwitch toggle && toggle.Tag is string tag)
+                return tag;
+        }
+        return null;
     }
 
     private void LoadSettings()
@@ -92,23 +205,12 @@ public sealed partial class ProvidersSettingsPage : Page
 
     private void InjectBarVisibilitySections()
     {
-        foreach (var child in ProvidersPanel.Children)
+        foreach (var child in _providerItems)
         {
-            if (child is not Expander expander) continue;
+            var expander = GetExpanderFromItem(child);
+            if (expander == null) continue;
 
-            // Find the provider name from the ToggleSwitch Tag inside the header
-            string? providerName = null;
-            if (expander.Header is Grid headerGrid)
-            {
-                foreach (var headerChild in headerGrid.Children)
-                {
-                    if (headerChild is ToggleSwitch toggle && toggle.Tag is string tag)
-                    {
-                        providerName = tag;
-                        break;
-                    }
-                }
-            }
+            var providerName = GetProviderNameFromItem(child);
             if (providerName == null || !Enum.TryParse<UsageProvider>(providerName, out var provider))
                 continue;
 

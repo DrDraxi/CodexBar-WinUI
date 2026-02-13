@@ -11,7 +11,17 @@
             <TextBlock Text="Enable the AI providers you want to track."
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
-            <StackPanel x:Name="ProvidersPanel" Spacing="12">
+            <ListView x:Name="ProvidersListView"
+                      CanReorderItems="True" AllowDrop="True"
+                      SelectionMode="None" IsItemClickEnabled="False">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0,0,0,12"/>
+                        <Setter Property="MinHeight" Value="0"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <!-- Codex -->
                 <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Expander.Header>
@@ -431,7 +441,7 @@
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
                 </Expander>
-            </StackPanel>
+            </ListView>
         </StackPanel>
     </ScrollViewer>
 </Page>

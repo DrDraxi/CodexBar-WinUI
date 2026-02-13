@@ -102,7 +102,7 @@ public sealed partial class UsagePopup : Window
             }
         }
 
-        foreach (var (provider, snapshot) in snapshots.OrderBy(kv => kv.Key.ToString()))
+        foreach (var (provider, snapshot) in SettingsService.Instance.Settings.GetOrderedProviders(snapshots))
         {
             if (_providerCards.TryGetValue(provider, out var cached))
             {

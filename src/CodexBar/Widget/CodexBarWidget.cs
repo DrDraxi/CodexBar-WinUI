@@ -55,7 +55,7 @@ internal sealed class CodexBarWidget : IDisposable
 
         ctx.Horizontal(ProviderSpacingDip, h =>
         {
-            foreach (var (provider, snapshot) in snapshots.OrderBy(kv => kv.Key.ToString()))
+            foreach (var (provider, snapshot) in SettingsService.Instance.Settings.GetOrderedProviders(snapshots))
             {
                 if (!snapshot.IsValid) continue;
 
