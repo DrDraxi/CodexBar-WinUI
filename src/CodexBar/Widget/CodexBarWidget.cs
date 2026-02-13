@@ -15,7 +15,7 @@ internal sealed class CodexBarWidget : IDisposable
     private const int BarSpacingDip = 2;
     private const int ProviderSpacingDip = 6;
     private const int BarHeightDip = 26;
-    private const int ProviderPaddingDip = 4;
+    private const int ProviderPaddingDip = 7;
 
     private static readonly Color GrayBg = Color.FromArgb(80, 128, 128, 128);
     private static readonly Color OrangeColor = Color.FromRgb(255, 165, 0);
@@ -53,47 +53,46 @@ internal sealed class CodexBarWidget : IDisposable
         var snapshots = _snapshots;
         if (snapshots.Count == 0) return;
 
-        ctx.Panel(outerPanel =>
+        ctx.Horizontal(ProviderSpacingDip, h =>
         {
-            outerPanel.Horizontal(ProviderSpacingDip, h =>
+            foreach (var (provider, snapshot) in snapshots.OrderBy(kv => kv.Key.ToString()))
             {
-                foreach (var (provider, snapshot) in snapshots.OrderBy(kv => kv.Key.ToString()))
+                if (!snapshot.IsValid) continue;
+
+                var info = ProviderRegistry.GetProviderInfo(provider);
+                var providerColor = ParseColor(info.Color);
+                var vis = SettingsService.Instance.Settings.GetWidgetVisibility(provider);
+
+                var bars = GetVisibleBars(snapshot, vis, providerColor);
+                if (bars.Count == 0) continue;
+
+                int canvasWidth = ProviderPaddingDip * 2 +
+                                 bars.Count * BarWidthDip +
+                                 (bars.Count - 1) * BarSpacingDip;
+
+                h.Panel(panel =>
                 {
-                    if (!snapshot.IsValid) continue;
+                    // Transparent HoverBackground signals per-panel hover targeting
+                    panel.HoverBackground(Color.Transparent);
+                    panel.OnClick(() => Clicked?.Invoke(this, EventArgs.Empty));
+                    panel.Tooltip(BuildTooltip(info, snapshot, vis));
 
-                    var info = ProviderRegistry.GetProviderInfo(provider);
-                    var providerColor = ParseColor(info.Color);
-                    var vis = SettingsService.Instance.Settings.GetWidgetVisibility(provider);
-
-                    var bars = GetVisibleBars(snapshot, vis, providerColor);
-                    if (bars.Count == 0) continue;
-
-                    int canvasWidth = ProviderPaddingDip * 2 +
-                                     bars.Count * BarWidthDip +
-                                     (bars.Count - 1) * BarSpacingDip;
-
-                    h.Panel(panel =>
+                    panel.Canvas(canvasWidth, BarHeightDip, canvas =>
                     {
-                        panel.OnClick(() => Clicked?.Invoke(this, EventArgs.Empty));
-                        panel.Tooltip(BuildTooltip(info, snapshot, vis));
-
-                        panel.Canvas(canvasWidth, BarHeightDip, canvas =>
+                        int x = ProviderPaddingDip;
+                        foreach (var (percent, color) in bars)
                         {
-                            int x = ProviderPaddingDip;
-                            foreach (var (percent, color) in bars)
-                            {
-                                canvas.DrawFilledRoundedRect(x, 0, BarWidthDip, BarHeightDip, 2, GrayBg);
+                            canvas.DrawFilledRoundedRect(x, 0, BarWidthDip, BarHeightDip, 2, GrayBg);
 
-                                int fillH = (int)(BarHeightDip * Math.Min(percent, 100) / 100);
-                                if (fillH > 0)
-                                    canvas.DrawFilledRoundedRect(x, BarHeightDip - fillH, BarWidthDip, fillH, 2, color);
+                            int fillH = (int)(BarHeightDip * Math.Min(percent, 100) / 100);
+                            if (fillH > 0)
+                                canvas.DrawFilledRoundedRect(x, BarHeightDip - fillH, BarWidthDip, fillH, 2, color);
 
-                                x += BarWidthDip + BarSpacingDip;
-                            }
-                        });
+                            x += BarWidthDip + BarSpacingDip;
+                        }
                     });
-                }
-            });
+                });
+            }
         });
     }
 
