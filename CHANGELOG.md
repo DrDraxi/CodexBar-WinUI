@@ -5,6 +5,14 @@ All notable changes to CodexBar will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.1] - 2026-02-16
+
+### Fixed
+- Widget now auto-positions correctly when running as the only widget
+- Periodic position drift detection (500ms) keeps widget aligned with tray area
+- Widget repositions on display resolution and system settings changes
+- Rapid left-clicks no longer ignored on every other click
+
 ## [v2.1.0] - 2026-02-13
 
 ### Added
