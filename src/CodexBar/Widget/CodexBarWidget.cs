@@ -32,7 +32,8 @@ internal sealed class CodexBarWidget : IDisposable
     {
         if (_disposed || _widget != null) return;
 
-        _widget = new TaskbarWidget.Widget("CodexBar", render: Render);
+        _widget = new TaskbarWidget.Widget("CodexBar", render: Render,
+            options: new WidgetOptions { RootHover = false });
         _widget.Show();
     }
 
